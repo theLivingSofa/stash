@@ -1,26 +1,333 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Night reading room (default) */
+  --bg: #111a2c;
+  --surface: #18233a;
+  --surface-2: #1e2a44;
+  --line: #2a3756;
+  --text: #ece6da;
+  --muted: #9aa3b7;
+  --faint: #6c7790;
+  --accent: #f0b44c;
+  --accent-ink: #1a1405;
+  --danger: #ef8a7a;
+  --font-scale: 1;
+  --nav-h: 60px;
+  --top-h: 52px;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --bg: #e9edf4;
+  --surface: #fbfcfe;
+  --surface-2: #f1f4f9;
+  --line: #d3dae6;
+  --text: #182136;
+  --muted: #586379;
+  --faint: #8590a5;
+  --accent: #9a5f0c;
+  --accent-ink: #fff8ec;
+  --danger: #b4412f;
+  color-scheme: light;
+}
+
+/* Topic spines: muted hues that hold up on both themes. */
+:root {
+  --t-philosophy: #8f84d8;
+  --t-history: #c99a5b;
+  --t-psychology: #d27fa6;
+  --t-science: #5fa8d3;
+  --t-economics: #6fbf8f;
+  --t-literature: #c87f6b;
+  --t-art: #e0a458;
+  --t-technology: #7b9fe0;
+  --t-health: #5fbfb0;
+  --t-productivity: #b8c25a;
+  --t-society: #a98fc9;
+  --t-religion: #d6b26a;
+  --t-language: #e08a8a;
+  --t-mathematics: #6fb5e8;
+  --t-nature: #79b86a;
+  --t-biography: #c4a487;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-danger: var(--danger);
+  --font-serif: var(--font-literata), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-schibsted), ui-sans-serif, system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  overscroll-behavior: none;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  text-rendering: optimizeLegibility;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+button {
+  cursor: pointer;
+}
+
+/* ---------- App frame ---------- */
+
+.app-frame {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding-top: env(safe-area-inset-top);
+}
+
+.app-main {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.bottom-nav {
+  height: calc(var(--nav-h) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+}
+
+/* ---------- Feed ---------- */
+
+.feed-scroller {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  touch-action: pan-y;
+}
+.feed-scroller::-webkit-scrollbar {
+  display: none;
+}
+.feed-scroller[data-snap="true"] {
+  scroll-snap-type: y mandatory;
+}
+/* While a card is flipped the feed must not move at all. */
+.feed-scroller[data-locked="true"] {
+  overflow-y: hidden;
+  touch-action: none;
+}
+
+.feed-item {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  contain: layout paint style;
+  padding: 10px 14px 12px;
+}
+
+/* ---------- Card + flip ---------- */
+
+.card3d {
+  position: relative;
+  height: 100%;
+  perspective: 1400px;
+}
+
+.flipper {
+  position: relative;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 350ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.flipper[data-animating="true"] {
+  will-change: transform;
+}
+.flipper[data-side="back"] {
+  transform: rotateY(180deg);
+}
+
+.face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 22px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.face-back {
+  transform: rotateY(180deg);
+}
+
+/*
+ * At rest on the back, drop the 3D transforms entirely: nested scrolling and
+ * hit-testing inside 3D-transformed layers is unreliable on mobile Safari.
+ */
+.flipper[data-rest="back"] {
+  transform: none;
+  transition: none;
+}
+.flipper[data-rest="back"] .face-back {
+  transform: none;
+}
+.flipper[data-rest="back"] .face-front {
+  visibility: hidden;
+}
+.flipper[data-rest="front"] .face-back {
+  visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flipper,
+  .flipper[data-side="back"] {
+    transform: none !important;
+    transition: none;
+  }
+  .face {
+    transition: opacity 160ms ease-out;
+  }
+  .face-back {
+    transform: none !important;
+  }
+  .flipper[data-side="front"] .face-back {
+    opacity: 0;
+  }
+  .flipper[data-side="back"] .face-front {
+    opacity: 0;
+  }
+}
+
+.back-scroll {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  scrollbar-width: thin;
+}
+
+/* The spine: topic colour + vertical label down the left edge. */
+.spine {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 30px;
+  background: color-mix(in srgb, var(--spine) 16%, var(--surface));
+  border-right: 1px solid color-mix(in srgb, var(--spine) 40%, transparent);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 18px;
+}
+.spine::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--spine);
+}
+.spine-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: color-mix(in srgb, var(--spine) 85%, var(--text));
+  white-space: nowrap;
+}
+
+.idea-text {
+  font-family: var(--font-serif);
+  font-size: calc(clamp(1.12rem, 0.95rem + 1.15vw, 1.42rem) * var(--font-scale) * var(--fit, 1));
+  line-height: 1.52;
+  letter-spacing: -0.003em;
+  font-variation-settings: "opsz" 20;
+  hyphens: auto;
+  text-wrap: pretty;
+}
+.idea-text[data-len="long"] {
+  font-size: calc(clamp(1.04rem, 0.9rem + 0.95vw, 1.28rem) * var(--font-scale) * var(--fit, 1));
+}
+.idea-text[data-len="short"] {
+  font-size: calc(clamp(1.3rem, 1.05rem + 1.6vw, 1.7rem) * var(--font-scale) * var(--fit, 1));
+  line-height: 1.42;
+}
+
+.prose-back {
+  font-family: var(--font-serif);
+  font-size: calc(1rem * var(--font-scale));
+  line-height: 1.62;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-2) 0%, var(--line) 50%, var(--surface-2) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+  border-radius: 8px;
+}
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
+.save-pop {
+  animation: pop 260ms cubic-bezier(0.3, 1.6, 0.6, 1);
+}
+@keyframes pop {
+  50% {
+    transform: scale(1.25);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .save-pop {
+    animation: none;
+  }
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }

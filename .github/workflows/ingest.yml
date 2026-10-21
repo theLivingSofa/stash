@@ -1,0 +1,54 @@
+name: Ingest
+
+# Keeps the unseen-ideas buffer topped up. Calls the app's secured ingest
+# endpoint every 30 minutes; each call does up to ~50s of work (chunked and
+# resumable on the server) and returns a JSON report.
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Ingest even if the buffer is already full"
+        type: boolean
+        default: false
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: ingest
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Call /api/ingest
+        env:
+          SITE_URL: ${{ secrets.SITE_URL }}
+          INGEST_SECRET: ${{ secrets.INGEST_SECRET }}
+          FORCE: ${{ github.event_name == 'workflow_dispatch' && inputs.force && '?force=1' || '' }}
+        run: |
+          if [ -z "$SITE_URL" ] || [ -z "$INGEST_SECRET" ]; then
+            echo "::error::SITE_URL and INGEST_SECRET repository secrets are required"; exit 1
+          fi
+          for attempt in 1 2 3; do
+            code=$(curl -sS -o resp.json -w "%{http_code}" -X POST "${SITE_URL%/}/api/ingest${FORCE}" \
+              -H "Authorization: Bearer $INGEST_SECRET" --max-time 90 || echo 000)
+            echo "HTTP $code"; cat resp.json 2>/dev/null; echo
+            if [ "$code" = "200" ]; then exit 0; fi
+            if [ "$code" = "401" ]; then echo "::error::INGEST_SECRET does not match the app"; exit 1; fi
+            sleep 20
+          done
+          echo "::error::ingest failed after 3 attempts"; exit 1
+
+      # Public repos have scheduled workflows disabled after 60 days without
+      # commits. Re-enabling via the API resets that clock.
+      - name: Keep the schedule alive
+        if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/ingest.yml/enable" || true
