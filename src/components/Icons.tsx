@@ -37,7 +37,7 @@ export const IconLess = ({ size, filled, ...p }: P & { filled?: boolean }) => (
 export const IconSpeak = ({ size, active, ...p }: P & { active?: boolean }) => (
   <svg {...base(size)} {...p}>
     <path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5H4Z" />
-    {active ? <path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" /> : <path d="M16 10l4 4M20 10l-4 4" />}
+    {active ? <path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" /> : <path d="M15.5 9.5a3.2 3.2 0 0 1 0 5" />}
   </svg>
 );
 export const IconDetails = ({ size = 16, ...p }: P) => (

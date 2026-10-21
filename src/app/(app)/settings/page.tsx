@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { useSettings } from "@/lib/client/settings";
 import { canSpeak, speak } from "@/lib/client/speak";
@@ -12,6 +12,7 @@ export default function SettingsPage() {
   const [s, update] = useSettings();
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const speechOk = useSyncExternalStore(noopSubscribe, canSpeak, () => false);
 
   useEffect(() => {
     if (!canSpeak()) return;
@@ -81,7 +82,7 @@ export default function SettingsPage() {
         <Switch on={s.snap} onChange={(snap) => update({ snap })} label="One card at a time" />
       </div>
 
-      {canSpeak() ? (
+      {speechOk ? (
         <div className="border-b border-line px-1 py-4">
           <label htmlFor="voice" className="block text-[15px]">
             Read-aloud voice
@@ -142,6 +143,8 @@ export default function SettingsPage() {
   );
 }
 
+const noopSubscribe = () => () => {};
+
 function Switch({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
     <button
@@ -152,7 +155,7 @@ function Switch({ on, onChange, label }: { on: boolean; onChange: (v: boolean) =
       onClick={() => onChange(!on)}
       className={`relative h-7 w-12 shrink-0 rounded-full border transition-colors ${on ? "border-accent bg-accent" : "border-line bg-surface-2"}`}
     >
-      <span className={`absolute top-0.5 h-5.5 w-5.5 rounded-full transition-transform ${on ? "translate-x-[22px] bg-accent-ink" : "translate-x-0.5 bg-muted"}`} />
+      <span className={`absolute top-[2px] left-0 h-[22px] w-[22px] rounded-full transition-transform ${on ? "translate-x-[23px] bg-accent-ink" : "translate-x-[2px] bg-muted"}`} />
     </button>
   );
 }

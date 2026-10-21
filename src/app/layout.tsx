@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Literata, Schibsted_Grotesk } from "next/font/google";
+import Script from "next/script";
 import { ServiceWorker } from "@/components/ServiceWorker";
 import "./globals.css";
 
@@ -38,10 +39,10 @@ const settingsScript = `(function(){try{var s=JSON.parse(localStorage.getItem("s
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" data-theme="dark" className={`${literata.variable} ${schibsted.variable}`} suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: settingsScript }} />
-      </head>
       <body>
+        <Script id="stash-settings" strategy="beforeInteractive">
+          {settingsScript}
+        </Script>
         {children}
         <ServiceWorker />
       </body>
