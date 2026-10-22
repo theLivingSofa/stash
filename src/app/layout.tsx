@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Literata, Schibsted_Grotesk } from "next/font/google";
 import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ServiceWorker } from "@/components/ServiceWorker";
 import "./globals.css";
 
@@ -55,6 +56,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <ServiceWorker />
         {/* Vercel Web Analytics: cookieless page views (enabled on the Vercel project). */}
         <Analytics />
+        {/* Vercel Speed Insights: real-device load and responsiveness metrics. */}
+        <SpeedInsights />
       </body>
     </html>
   );
