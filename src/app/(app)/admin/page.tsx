@@ -65,10 +65,10 @@ function DeviceInfo() {
     document.body.appendChild(probe);
     const cs = getComputedStyle(probe);
     const standalone = (navigator as Navigator & { standalone?: boolean }).standalone === true;
-    const appH = getComputedStyle(document.documentElement).getPropertyValue("--app-h").trim();
+    const safeBottom = getComputedStyle(document.documentElement).getPropertyValue("--safe-bottom").trim();
     setInfo(
       `${standalone ? "Installed app" : "Browser"} · viewport ${innerWidth}×${innerHeight} · screen ${screen.width}×${screen.height} · ` +
-        `safe areas ${parseFloat(cs.paddingTop)}/${parseFloat(cs.paddingBottom)} · frame ${appH || "100%"}`,
+        `safe areas ${parseFloat(cs.paddingTop)}/${parseFloat(cs.paddingBottom)} · nav padding ${safeBottom ? "0 (iOS keeps the home-bar strip)" : "normal"}`,
     );
     probe.remove();
     });

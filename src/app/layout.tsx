@@ -34,12 +34,12 @@ export const viewport: Viewport = {
 };
 
 // Applied before paint so the saved theme and font size never flash.
-// Also: in an installed iPhone web app, iOS 26 can report a viewport shorter
-// than the screen (by about the status-bar height) while drawing the page from
-// the very top, leaving an empty band under the bottom nav. When that happens,
-// size the app frame to the real screen height. iPhone-only (navigator.standalone),
-// full-width windows only, so Android and iPad split view are untouched.
-const fitScript = `(function(){function fit(){try{var d=document.documentElement;if(navigator.standalone!==true){d.style.removeProperty("--app-h");return;}var w=innerWidth,h=innerHeight,sw=screen.width,sh=screen.height,portrait=h>=w,full=portrait?Math.max(sw,sh):Math.min(sw,sh),fullW=portrait?Math.min(sw,sh):Math.max(sw,sh);if(Math.abs(w-fullW)<2&&full>h+1){d.style.setProperty("--app-h",full+"px");}else{d.style.removeProperty("--app-h");}}catch(e){}}fit();addEventListener("resize",fit);addEventListener("orientationchange",function(){setTimeout(fit,300);});})();`;
+// Also: in an installed iPhone web app, iOS 26 can draw the page shorter than
+// the screen (WebKit bugs 301994/316008) and keep the bottom strip, including
+// the home bar, for itself. Pages can't draw there, so the nav must not add its
+// own home-bar padding on top of that strip: set --safe-bottom to 0. Only for
+// installed, full-width iPhone apps; Android and iPad split view are untouched.
+const fitScript = `(function(){function fit(){try{var d=document.documentElement;if(navigator.standalone!==true){d.style.removeProperty("--safe-bottom");return;}var w=innerWidth,h=innerHeight,sw=screen.width,sh=screen.height,portrait=h>=w,full=portrait?Math.max(sw,sh):Math.min(sw,sh),fullW=portrait?Math.min(sw,sh):Math.max(sw,sh);if(Math.abs(w-fullW)<2&&full>h+20){d.style.setProperty("--safe-bottom","0px");}else{d.style.removeProperty("--safe-bottom");}}catch(e){}}fit();addEventListener("resize",fit);addEventListener("orientationchange",function(){setTimeout(fit,300);});})();`;
 
 const settingsScript = `(function(){try{var s=JSON.parse(localStorage.getItem("stash-settings")||"{}");var d=document.documentElement;d.dataset.theme=s.theme==="light"?"light":"dark";if(s.fontScale)d.style.setProperty("--font-scale",String(s.fontScale));}catch(e){document.documentElement.dataset.theme="dark";}})();`;
 
