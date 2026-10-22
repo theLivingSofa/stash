@@ -104,7 +104,13 @@ export default function SettingsPage() {
             <button
               type="button"
               className="rounded-xl border border-line px-3 text-[14px]"
-              onClick={() => speak("This is how your ideas will sound.", { voice: s.voice, rate: s.rate })}
+              onClick={() =>
+                speak("This is how your ideas will sound.", {
+                  voice: s.voice,
+                  rate: s.rate,
+                  onFail: () => toast("Read-aloud didn't start. On iPhone, turn off Silent mode and check the volume, then try again."),
+                })
+              }
             >
               Test
             </button>

@@ -89,7 +89,15 @@ export function CardActions({
       return;
     }
     setSpeaking(card.id);
-    speak(cardSpeech(card, includeBack), { voice: settings.voice, rate: settings.rate, onEnd: () => speakingId === card.id && setSpeaking(null) });
+    speak(cardSpeech(card, includeBack), {
+      voice: settings.voice,
+      rate: settings.rate,
+      onEnd: () => speakingId === card.id && setSpeaking(null),
+      onFail: () => {
+        if (speakingId === card.id) setSpeaking(null);
+        toast("Read-aloud didn't start. On iPhone, turn off Silent mode and check the volume, then try again.");
+      },
+    });
   };
 
   const btn = "inline-flex h-10 w-10 items-center justify-center rounded-full text-muted transition-colors hover:text-text active:bg-surface-2";

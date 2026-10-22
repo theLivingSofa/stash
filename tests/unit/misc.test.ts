@@ -56,3 +56,20 @@ describe("ingest helpers", () => {
     expect(chosen.map((s) => s.id)).toEqual(["a", "b"]);
   });
 });
+
+describe("read-aloud chunking", async () => {
+  const { chunkText } = await import("@/lib/client/speak");
+  it("splits long text into short sentence chunks without losing words", () => {
+    const text = Array.from({ length: 12 }, (_, i) => `Sentence number ${i} explains one small part of the idea in plain words.`).join(" ");
+    const chunks = chunkText(text, 220);
+    expect(chunks.length).toBeGreaterThan(2);
+    expect(chunks.every((c) => c.length <= 220)).toBe(true);
+    expect(chunks.join(" ").split(/\s+/).length).toBe(text.split(/\s+/).length);
+  });
+  it("breaks a single very long sentence", () => {
+    const long = Array.from({ length: 80 }, (_, i) => `word${i}`).join(" ");
+    const chunks = chunkText(long, 100);
+    expect(chunks.every((c) => c.length <= 100)).toBe(true);
+    expect(chunks.join(" ")).toBe(long);
+  });
+});
