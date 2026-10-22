@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Card } from "@/lib/types";
 import { topicLabel } from "@/lib/topics";
+import { primeCard } from "@/lib/client/opened";
 import { IconSearch } from "@/components/Icons";
 import { toast } from "@/components/Toast";
 
@@ -156,11 +157,10 @@ export default function LibraryPage() {
       <ul className="mt-5 space-y-3">
         {cards === null
           ? [0, 1, 2, 3].map((i) => (
-              <li key={i} className="glass flex h-[108px] gap-3 rounded-[22px] p-2" style={{ ["--light" as string]: "var(--accent)" }}>
-                <span className="skeleton w-[62px] shrink-0 rounded-[14px]" />
-                <span className="flex-1 space-y-2.5 py-2">
-                  <span className="skeleton block h-3 w-24" />
-                  <span className="skeleton block h-4 w-full" />
+              <li key={i} className="glass flex h-[70px] gap-3 rounded-[20px] p-1.5" style={{ ["--light" as string]: "var(--accent)" }}>
+                <span className="skeleton w-[10px] shrink-0 rounded-[8px]" />
+                <span className="flex-1 space-y-2 py-2">
+                  <span className="skeleton block h-2.5 w-20" />
                   <span className="skeleton block h-4 w-3/4" />
                 </span>
               </li>
@@ -169,17 +169,21 @@ export default function LibraryPage() {
               <li key={c.id}>
                 <Link
                   href={`/idea/${c.id}`}
-                  className="glass flex gap-3 rounded-[22px] p-2"
+                  onClick={() => primeCard(c)}
+                  className="glass flex items-stretch gap-3 rounded-[20px] p-1.5 transition-transform duration-150 active:scale-[0.985]"
                   style={{ ["--light" as string]: `var(--t-${c.topics[0] ?? "philosophy"})` }}
                 >
-                  <span className="w-[62px] shrink-0 rounded-[14px]" style={film} aria-hidden />
-                  <span className="min-w-0 flex-1 py-1.5 pr-2">
-                    <span className="band p-0 pb-1.5">
+                  {/* A sliver of the slide's film: the topic colour. */}
+                  <span className="w-[10px] shrink-0 rounded-[8px]" style={film} aria-hidden />
+                  <span className="min-w-0 flex-1 py-1.5 pr-1">
+                    <span className="band" style={{ padding: "0 0 4px" }}>
                       <span>{topicLabel(c.topics[0] ?? "")}</span>
                       <span className="ml-auto opacity-70">{c.saved ? "Saved" : c.reaction === 1 ? "Liked" : ""}</span>
                     </span>
-                    {c.title ? <span className="label block text-[15.5px] leading-snug">{c.title}</span> : null}
-                    <span className="mt-1 line-clamp-2 block font-serif text-[15px] leading-relaxed text-muted">{c.text}</span>
+                    <span className="label line-clamp-2 block text-[15.5px] leading-snug">{c.title ?? firstWords(c.text)}</span>
+                  </span>
+                  <span className="self-center pr-2 text-[18px] text-faint" aria-hidden>
+                    ›
                   </span>
                 </Link>
               </li>
@@ -206,4 +210,10 @@ export default function LibraryPage() {
       ) : null}
     </div>
   );
+}
+
+/** Untitled ideas show their opening words instead of a title. */
+function firstWords(text: string, n = 9): string {
+  const w = text.split(/\s+/);
+  return w.length > n ? `${w.slice(0, n).join(" ")}…` : text;
 }

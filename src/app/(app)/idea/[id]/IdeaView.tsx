@@ -7,6 +7,7 @@ import { IdeaCard } from "@/components/IdeaCard";
 import { IconBack } from "@/components/Icons";
 import { toast } from "@/components/Toast";
 import { flush, initEvents } from "@/lib/client/events";
+import { primedCard } from "@/lib/client/opened";
 
 interface Collection {
   id: string;
@@ -15,7 +16,8 @@ interface Collection {
 
 export function IdeaView({ id }: { id: string }) {
   const router = useRouter();
-  const [card, setCard] = useState<Card | null>(null);
+  // Opened from the Library: show the card it already had at once, then refresh.
+  const [card, setCard] = useState<Card | null>(() => primedCard(id));
   const [missing, setMissing] = useState(false);
   const [collections, setCollections] = useState<Collection[]>([]);
 
