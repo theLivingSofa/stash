@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { useSettings } from "@/lib/client/settings";
-import { canSpeak, speak } from "@/lib/client/speak";
+import { canSpeak, rankedVoices, speak, voiceScore } from "@/lib/client/speak";
 import { toast } from "@/components/Toast";
 
 export default function SettingsPage() {
@@ -16,7 +16,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!canSpeak()) return;
-    const load = () => setVoices(window.speechSynthesis.getVoices().filter((v) => v.lang.startsWith("en")));
+    const load = () => setVoices(rankedVoices());
     load();
     window.speechSynthesis.addEventListener("voiceschanged", load);
     return () => window.speechSynthesis.removeEventListener("voiceschanged", load);
@@ -94,10 +94,11 @@ export default function SettingsPage() {
               onChange={(e) => update({ voice: e.target.value || null })}
               className="min-w-0 flex-1 rounded-xl border border-line bg-surface px-3 py-2 text-[14px]"
             >
-              <option value="">System default</option>
+              <option value="">Automatic (most natural installed)</option>
               {voices.map((v) => (
                 <option key={v.name} value={v.name}>
                   {v.name}
+                  {voiceScore(v) >= 4 ? " · natural" : ""}
                 </option>
               ))}
             </select>
@@ -115,6 +116,13 @@ export default function SettingsPage() {
               Test
             </button>
           </div>
+          {voices.length > 0 && voiceScore(voices[0]) < 4 ? (
+            <p className="mt-2 text-[13px] leading-relaxed text-muted">
+              For a far more natural voice on iPhone, download a free Premium voice: Settings → Accessibility → Spoken
+              Content (or Read &amp; Speak) → Voices → English, then pick one marked Premium, like Ava or Zoe. Reopen Stash and
+              it&apos;s used automatically. No data or tokens needed.
+            </p>
+          ) : null}
           <label htmlFor="rate" className="mt-3 flex items-center justify-between text-[13px] text-muted">
             Speed <span>{s.rate.toFixed(1)}×</span>
           </label>

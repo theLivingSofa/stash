@@ -106,3 +106,20 @@ describe("speak (iOS-safe)", () => {
     expect(onFail).not.toHaveBeenCalled();
   });
 });
+
+describe("voice ranking", () => {
+  it("prefers premium/enhanced/natural English voices and never picks novelty voices", async () => {
+    const { voiceScore } = await import("@/lib/client/speak");
+    const voices = [
+      { name: "Albert", lang: "en-US" },
+      { name: "Samantha", lang: "en-US" },
+      { name: "Ava (Premium)", lang: "en-US" },
+      { name: "Microsoft Aria Online (Natural) - English (United States)", lang: "en-US" },
+      { name: "Thomas", lang: "fr-FR" },
+    ];
+    const sorted = [...voices].sort((a, b) => voiceScore(b) - voiceScore(a));
+    expect(sorted[0].name).toBe("Ava (Premium)");
+    expect(voiceScore({ name: "Albert", lang: "en-US" })).toBeLessThan(voiceScore({ name: "Samantha", lang: "en-US" }));
+    expect(voiceScore({ name: "Thomas", lang: "fr-FR" })).toBeLessThan(-50);
+  });
+});

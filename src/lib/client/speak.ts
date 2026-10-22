@@ -51,13 +51,57 @@ export function chunkText(text: string, max = 220): string[] {
 let queue: SpeechSynthesisUtterance[] = [];
 let session = 0;
 
+// macOS/iOS novelty voices that should never be picked automatically.
+const NOVELTY =
+  /\b(Albert|Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Good News|Jester|Organ|Superstar|Trinoids|Whisper|Wobble|Zarvox|Fred|Junior|Ralph|Kathy|Grandma|Grandpa|Rocko|Shelley|Sandy|Flo|Eddy|Reed)\b/i;
+
+/**
+ * How natural a voice is likely to sound (higher is better). Downloaded
+ * "Premium"/"Enhanced" voices on iPhone and Mac, Edge's "Natural" voices and
+ * Google's voices on Android sound far less robotic than the defaults.
+ */
+export function voiceScore(v: { name: string; lang: string; localService?: boolean }): number {
+  if (!/^en(-|_|$)/i.test(v.lang)) return -100;
+  if (NOVELTY.test(v.name)) return -50;
+  let s = 0;
+  if (/premium/i.test(v.name)) s += 6;
+  if (/enhanced/i.test(v.name)) s += 5;
+  if (/natural|neural/i.test(v.name)) s += 5;
+  if (/siri/i.test(v.name)) s += 4;
+  if (/google/i.test(v.name)) s += 3;
+  if (/^(Samantha|Ava|Zoe|Evan|Nathan|Allison|Susan|Tom|Karen|Daniel|Moira|Tessa|Serena|Rishi|Veena)\b/i.test(v.name)) s += 1;
+  if (/^en[-_](US|GB|IN|AU|IE)/i.test(v.lang)) s += 1;
+  return s;
+}
+
+/** English voices, most natural first. */
+export function rankedVoices(): SpeechSynthesisVoice[] {
+  if (!canSpeak()) return [];
+  return window.speechSynthesis
+    .getVoices()
+    .filter((v) => voiceScore(v) > -50)
+    .sort((a, b) => voiceScore(b) - voiceScore(a) || a.name.localeCompare(b.name));
+}
+
 function pickVoice(name: string | null | undefined): SpeechSynthesisVoice | null {
   const voices = window.speechSynthesis.getVoices();
   if (name) {
     const v = voices.find((x) => x.name === name);
-    if (v) return v;
+    if (v && voiceScore(v) > -50) return v;
   }
-  return null;
+  // Automatic: the most natural English voice installed.
+  return rankedVoices()[0] ?? null;
+}
+
+// Voices load asynchronously (notably on iOS); ask early so the first tap
+// can already use the best one.
+if (canSpeak()) {
+  try {
+    window.speechSynthesis.getVoices();
+    window.speechSynthesis.addEventListener?.("voiceschanged", () => window.speechSynthesis.getVoices());
+  } catch {
+    /* ignore */
+  }
 }
 
 export interface SpeakOptions {
