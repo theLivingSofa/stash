@@ -163,7 +163,8 @@ test.describe("feed and card flip", () => {
 
 test("passcode backup login still works", async ({ request }) => {
   const res = await request.post("/api/login", { data: { passcode: "definitely-wrong" } });
-  expect(res.status()).toBe(401);
+  // Rejected either way: 401, or 429 once the brute-force guard kicks in after many runs.
+  expect([401, 429]).toContain(res.status());
 });
 
 test("login page offers Google sign-in", async ({ browser }) => {
