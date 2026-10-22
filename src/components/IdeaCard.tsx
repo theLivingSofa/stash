@@ -23,6 +23,13 @@ interface Props extends CardHandlers {
   seen?: boolean;
   /** Parent can force the card back to its front (e.g. when it leaves the screen). */
   forceFront?: boolean;
+  /** The topic the feed is filtered to: label and light the card with it when it has it. */
+  focus?: string;
+}
+
+/** The topic a card wears: the feed's topic if the card has it, else its main topic. */
+export function cardTopic(card: Card, focus?: string | null): string {
+  return focus && card.topics.includes(focus) ? focus : (card.topics[0] ?? "philosophy");
 }
 
 /** Next animation frame, with a timer fallback for throttled (background) pages. */
@@ -46,7 +53,7 @@ function lengthBucket(text: string): "short" | "normal" | "long" {
   return n < 38 ? "short" : n > 78 ? "long" : "normal";
 }
 
-export const IdeaCard = memo(function IdeaCard({ card, seen = false, forceFront, onUpdate, onRelated, onFlipChange }: Props) {
+export const IdeaCard = memo(function IdeaCard({ card, seen = false, forceFront, focus, onUpdate, onRelated, onFlipChange }: Props) {
   const [side, setSide] = useState<Side>("front");
   const [rest, setRest] = useState<Side | null>("front");
   const [instant, setInstant] = useState(false);
@@ -54,7 +61,8 @@ export const IdeaCard = memo(function IdeaCard({ card, seen = false, forceFront,
   const detailsRef = useRef<HTMLButtonElement>(null);
   const backHeaderRef = useRef<HTMLButtonElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const light = `var(--t-${card.topics[0] ?? "philosophy"}, var(--accent))`;
+  const topic = cardTopic(card, focus);
+  const light = `var(--t-${topic}, var(--accent))`;
 
   useEffect(() => () => {
     if (timer.current) clearTimeout(timer.current);
@@ -126,7 +134,7 @@ export const IdeaCard = memo(function IdeaCard({ card, seen = false, forceFront,
           aria-label={card.title ?? "Idea"}
         >
           <span className="tape" data-on={card.saved ? "true" : "false"} aria-hidden />
-          <Band card={card} />
+          <Band card={card} topic={topic} />
           <Front card={card} seen={seen} detailsRef={detailsRef} onOpen={open} onUpdate={onUpdate} flipped={side === "back"} />
         </article>
 
@@ -137,7 +145,7 @@ export const IdeaCard = memo(function IdeaCard({ card, seen = false, forceFront,
           inert={side === "front"}
           aria-label={`Details: ${card.title ?? "idea"}`}
         >
-          <Band card={card} back />
+          <Band card={card} topic={topic} back />
           {backMounted ? (
             <Back card={card} headerRef={backHeaderRef} onClose={close} onUpdate={onUpdate} onRelated={onRelated} />
           ) : null}
@@ -154,11 +162,11 @@ export function slideNumber(id: string): string {
 }
 
 /** The mount's printed band: topic, slide number, source. */
-function Band({ card, back = false }: { card: Card; back?: boolean }) {
+function Band({ card, topic, back = false }: { card: Card; topic: string; back?: boolean }) {
   return (
     <div className="band" aria-hidden>
       <span className="chip-film" />
-      <span>{topicLabel(card.topics[0] ?? "ideas")}</span>
+      <span>{topicLabel(topic)}</span>
       <span className="tabular opacity-70">No. {slideNumber(card.id)}</span>
       <span className="ml-auto min-w-0 truncate opacity-80" style={{ textTransform: "none", letterSpacing: "0.01em" }}>
         {back ? "Notes" : card.source.domain || "source"}

@@ -46,13 +46,14 @@ jobs:
           echo "::error::ingest failed after 3 attempts"; exit 1
 
       # Natural read-aloud: make audio for new cards (free monthly budget,
-      # enforced on the server). Never fails the run.
+      # enforced on the server). chain=0 lets the server keep going in rounds
+      # until every card has audio. Never fails the run.
       - name: Make read-aloud audio
         env:
           SITE_URL: ${{ secrets.SITE_URL }}
           INGEST_SECRET: ${{ secrets.INGEST_SECRET }}
         run: |
-          curl -sS -X POST "${SITE_URL%/}/api/tts/backfill" -H "Authorization: Bearer $INGEST_SECRET" --max-time 70 || true
+          curl -sS -X POST "${SITE_URL%/}/api/tts/backfill?chain=0" -H "Authorization: Bearer $INGEST_SECRET" --max-time 70 || true
           echo
 
       # Public repos have scheduled workflows disabled after 60 days without

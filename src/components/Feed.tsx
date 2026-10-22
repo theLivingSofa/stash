@@ -9,7 +9,7 @@ import { cachedCards, rememberCards } from "@/lib/client/cache";
 import { useSettings } from "@/lib/client/settings";
 import { stopSpeaking } from "@/lib/client/speak";
 import { setLightTopic } from "@/lib/client/light";
-import { IdeaCard } from "./IdeaCard";
+import { cardTopic, IdeaCard } from "./IdeaCard";
 
 const SEEN_AFTER_MS = 1_500;
 const PREFETCH_WHEN_LEFT = 5;
@@ -153,7 +153,7 @@ export function Feed({ topic, concept }: { topic?: string; concept?: string }) {
   }, [height]);
 
   const activeId = cards[active]?.id;
-  const activeTopic = cards[active]?.topics[0] ?? null;
+  const activeTopic = cards[active] ? cardTopic(cards[active], topic) : null;
   // The room takes the light of the slide you're reading.
   useEffect(() => {
     setLightTopic(activeTopic);
@@ -310,6 +310,7 @@ export function Feed({ topic, concept }: { topic?: string; concept?: string }) {
                 >
                   {card ? (
                     <IdeaCard
+                      focus={topic}
                       card={card}
                       seen={seenIds.has(card.id)}
                       forceFront={vi.index !== active}
