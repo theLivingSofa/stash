@@ -19,10 +19,10 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, title: "Stash", statusBarStyle: "black-translucent" },
   icons: {
     icon: [
-      { url: "/icons/icon.svg", type: "image/svg+xml" },
-      { url: "/icons/favicon-48.png", sizes: "48x48", type: "image/png" },
+      { url: "/icons/icon.svg?v=2", type: "image/svg+xml" },
+      { url: "/icons/favicon-48.png?v=2", sizes: "48x48", type: "image/png" },
     ],
-    apple: "/icons/apple-touch-icon.png",
+    apple: "/icons/apple-touch-icon.png?v=2",
   },
   robots: { index: false, follow: false },
 };

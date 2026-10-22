@@ -1,32 +1,47 @@
-/** Render the app icon SVG into the PNG sizes the PWA manifest and iOS need. Usage: npm run icons */
+/**
+ * Render the app icon into the sizes the PWA manifest, iOS and browsers need.
+ * Usage: npm run icons
+ *
+ * Source: scripts/icon-source.svg, "Neon S with bookmark" (chosen 2026-10-22):
+ * a glowing condensed S (Archivo 900, outlined to a path, so no font is needed)
+ * on the darkroom ground, with a hot-pink bookmark ribbon over the corner.
+ * Drawn in code for this project; no stock or generated imagery.
+ */
 import sharp from "sharp";
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const OUT = resolve(__dirname, "../public/icons");
+const source = readFileSync(resolve(__dirname, "icon-source.svg"), "utf8");
+const inner = source.replace(/^[\s\S]*?<svg[^>]*>/, "").replace(/<\/svg>\s*$/, "");
+// The darkroom ground, drawn full size so a shrunk (maskable) icon has no seam.
+const GROUND = '<rect width="512" height="512" fill="url(#bg)"/>';
+const art = inner.replace(GROUND, "");
 
-// Three book spines leaning on a shelf, on the night-reading-room blue.
-const glyph = (scale: number, offset: number) => `
-  <g transform="translate(${offset} ${offset}) scale(${scale})">
-    <rect x="132" y="120" width="70" height="272" rx="12" fill="#f0b44c"/>
-    <rect x="220" y="150" width="62" height="242" rx="12" fill="#8f84d8"/>
-    <rect x="296" y="128" width="64" height="262" rx="12" fill="#5fbfb0" transform="rotate(12 328 390)"/>
-    <rect x="110" y="392" width="292" height="16" rx="8" fill="#ece6da"/>
-  </g>`;
-
-const svg = (opts: { maskable?: boolean; radius?: number }) => `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="${opts.radius ?? 0}" fill="#111a2c"/>
-  ${opts.maskable ? glyph(0.72, 72) : glyph(1, 0)}
+const svg = (opts: { radius?: number; inset?: number }) => {
+  const r = opts.radius ?? 0;
+  const k = 1 - 2 * (opts.inset ?? 0);
+  const off = 256 * (1 - k);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs><clipPath id="tile"><rect width="512" height="512" rx="${r}"/></clipPath></defs>
+  <g clip-path="url(#tile)">
+    ${GROUND}
+    <g transform="translate(${off} ${off}) scale(${k})">${art}</g>
+  </g>
 </svg>`;
+};
 
 async function main() {
+  // Browsers: rounded tile.
   writeFileSync(resolve(OUT, "icon.svg"), svg({ radius: 112 }));
+  // iOS and "any" manifest icons: full bleed (the OS rounds the corners).
   const plain = Buffer.from(svg({}));
-  const masked = Buffer.from(svg({ maskable: true }));
+  // Android "maskable": content kept inside the safe circle.
+  const masked = Buffer.from(svg({ inset: 0.1 }));
   await sharp(plain).resize(192, 192).png().toFile(resolve(OUT, "icon-192.png"));
   await sharp(plain).resize(512, 512).png().toFile(resolve(OUT, "icon-512.png"));
   await sharp(masked).resize(512, 512).png().toFile(resolve(OUT, "icon-maskable-512.png"));
-  await sharp(masked).resize(180, 180).png().toFile(resolve(OUT, "apple-touch-icon.png"));
+  await sharp(plain).resize(180, 180).png().toFile(resolve(OUT, "apple-touch-icon.png"));
   await sharp(Buffer.from(svg({ radius: 112 }))).resize(48, 48).png().toFile(resolve(OUT, "favicon-48.png"));
   console.log("icons written to public/icons");
 }

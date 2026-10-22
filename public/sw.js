@@ -4,10 +4,10 @@
  * - API calls are never cached here; the feed keeps its last ~50 cards
  *   (front and back) in IndexedDB for offline reading.
  */
-const VERSION = "stash-v1";
+const VERSION = "stash-v2"; // v2: new app icon
 const STATIC = `${VERSION}-static`;
 const PAGES = `${VERSION}-pages`;
-const PRECACHE = ["/offline.html", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];
+const PRECACHE = ["/offline.html", "/manifest.webmanifest", "/icons/icon-192.png?v=2", "/icons/icon-512.png?v=2"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(STATIC).then((c) => c.addAll(PRECACHE)).then(() => self.skipWaiting()));

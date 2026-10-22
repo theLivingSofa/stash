@@ -41,7 +41,7 @@ Stash is an endless, never-repeating vertical feed of short ideas (≤100-word i
 
 ## Brand Commitments
 
-- Name: **Stash**. App icon: three book spines on a shelf.
+- Name: **Stash**. App icon: a glowing neon "S" (gold to pink, Archivo 900) on the darkroom ground, with a hot-pink bookmark ribbon over the corner (since 2026-10-22; source: scripts/icon-source.svg).
 - Existing product vocabulary and copy stay unless the owner approves changes.
 
 ## Evidence on Hand
