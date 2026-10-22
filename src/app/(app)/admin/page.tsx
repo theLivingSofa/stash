@@ -55,6 +55,29 @@ const ago = (iso: string | null) => {
   return `${Math.round(s / 86400)} d ago`;
 };
 
+function DeviceInfo() {
+  const [info, setInfo] = useState<string | null>(null);
+  useEffect(() => {
+    // Measure after layout settles (and keep setState out of the effect body).
+    const frame = requestAnimationFrame(() => {
+    const probe = document.createElement("div");
+    probe.style.cssText = "position:fixed;top:0;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);visibility:hidden";
+    document.body.appendChild(probe);
+    const cs = getComputedStyle(probe);
+    const standalone = (navigator as Navigator & { standalone?: boolean }).standalone === true;
+    const appH = getComputedStyle(document.documentElement).getPropertyValue("--app-h").trim();
+    setInfo(
+      `${standalone ? "Installed app" : "Browser"} · viewport ${innerWidth}×${innerHeight} · screen ${screen.width}×${screen.height} · ` +
+        `safe areas ${parseFloat(cs.paddingTop)}/${parseFloat(cs.paddingBottom)} · frame ${appH || "100%"}`,
+    );
+    probe.remove();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
+  if (!info) return null;
+  return <p className="mt-2 px-1 text-[12px] text-faint">This device: {info}</p>;
+}
+
 function RunStatus({ status }: { status: string }) {
   return <span className={status === "ok" ? "text-accent" : status === "error" ? "text-danger" : "text-muted"}>{status}</span>;
 }
@@ -92,6 +115,7 @@ export default function AdminPage() {
       <h1 className="mb-4 px-1 font-serif text-[22px]">Behind the scenes</h1>
 
       <People />
+      <DeviceInfo />
 
       <section className={card}>
         <h2 className={h}>Buffer</h2>
