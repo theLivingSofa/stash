@@ -60,18 +60,36 @@ const NOVELTY =
  * "Premium"/"Enhanced" voices on iPhone and Mac, Edge's "Natural" voices and
  * Google's voices on Android sound far less robotic than the defaults.
  */
-export function voiceScore(v: { name: string; lang: string; localService?: boolean }): number {
+export function voiceScore(v: { name: string; lang: string; voiceURI?: string; localService?: boolean }): number {
   if (!/^en(-|_|$)/i.test(v.lang)) return -100;
   if (NOVELTY.test(v.name)) return -50;
+  // On iPhone the quality is often only in the id, e.g. com.apple.voice.premium.en-US.Zoe
+  const id = `${v.name} ${v.voiceURI ?? ""}`;
   let s = 0;
-  if (/premium/i.test(v.name)) s += 6;
-  if (/enhanced/i.test(v.name)) s += 5;
-  if (/natural|neural/i.test(v.name)) s += 5;
-  if (/siri/i.test(v.name)) s += 4;
+  if (/premium/i.test(id)) s += 6;
+  else if (/enhanced/i.test(id)) s += 5;
+  if (/natural|neural/i.test(id)) s += 5;
+  if (/siri/i.test(id)) s += 4;
+  if (/\bcompact\b/i.test(id)) s -= 1;
   if (/google/i.test(v.name)) s += 3;
   if (/^(Samantha|Ava|Zoe|Evan|Nathan|Allison|Susan|Tom|Karen|Daniel|Moira|Tessa|Serena|Rishi|Veena)\b/i.test(v.name)) s += 1;
   if (/^en[-_](US|GB|IN|AU|IE)/i.test(v.lang)) s += 1;
   return s;
+}
+
+/** "Premium", "Enhanced" or null, from a voice's name or id. */
+export function voiceQuality(v: { name: string; voiceURI?: string }): "Premium" | "Enhanced" | null {
+  const id = `${v.name} ${v.voiceURI ?? ""}`;
+  return /premium/i.test(id) ? "Premium" : /enhanced/i.test(id) ? "Enhanced" : null;
+}
+
+/** Name of the voice that will actually read (the chosen one, or the best installed). */
+export function activeVoiceLabel(selected: string | null | undefined): string | null {
+  if (!canSpeak()) return null;
+  const v = pickVoice(selected);
+  if (!v) return null;
+  const q = voiceQuality(v);
+  return q && !v.name.toLowerCase().includes(q.toLowerCase()) ? `${v.name} (${q})` : v.name;
 }
 
 /** English voices, most natural first. */

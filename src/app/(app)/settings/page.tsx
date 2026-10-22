@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { useSettings } from "@/lib/client/settings";
-import { canSpeak, rankedVoices, speak, voiceScore } from "@/lib/client/speak";
+import { activeVoiceLabel, canSpeak, rankedVoices, speak, voiceQuality } from "@/lib/client/speak";
 import { toast } from "@/components/Toast";
 import { clearDeviceData } from "@/lib/client/cache";
 
@@ -102,7 +102,7 @@ export default function SettingsPage() {
               {voices.map((v) => (
                 <option key={v.name} value={v.name}>
                   {v.name}
-                  {voiceScore(v) >= 4 ? " · natural" : ""}
+                  {voiceQuality(v) && !v.name.toLowerCase().includes(voiceQuality(v)!.toLowerCase()) ? ` (${voiceQuality(v)})` : ""}
                 </option>
               ))}
             </select>
@@ -120,11 +120,16 @@ export default function SettingsPage() {
               Test
             </button>
           </div>
+          {voices.length > 0 ? (
+            <p className="mt-2 text-[13px] text-muted">
+              Reading with: <span className="text-text">{activeVoiceLabel(s.voice) ?? "system default"}</span>
+            </p>
+          ) : null}
           <p className="mt-2 text-[13px] leading-relaxed text-muted">
             Hearing nothing on iPhone? Silent mode can mute read-aloud. Turn it off (Control Center or the side switch /
             Action button) and check the volume.
           </p>
-          {voices.length > 0 && voiceScore(voices[0]) < 4 ? (
+          {voices.length > 0 && !voiceQuality(voices[0]) ? (
             <p className="mt-2 text-[13px] leading-relaxed text-muted">
               For a far more natural voice on iPhone, download a free Premium voice: Settings → Accessibility → Spoken
               Content (or Read &amp; Speak) → Voices → English, then pick one marked Premium, like Ava or Zoe. Reopen Stash and

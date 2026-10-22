@@ -121,6 +121,10 @@ describe("voice ranking", () => {
     expect(sorted[0].name).toBe("Ava (Premium)");
     expect(voiceScore({ name: "Albert", lang: "en-US" })).toBeLessThan(voiceScore({ name: "Samantha", lang: "en-US" }));
     expect(voiceScore({ name: "Thomas", lang: "fr-FR" })).toBeLessThan(-50);
+    // iPhone: quality only in the id
+    const premiumZoe = { name: "Zoe", lang: "en-US", voiceURI: "com.apple.voice.premium.en-US.Zoe" };
+    const compactSamantha = { name: "Samantha", lang: "en-US", voiceURI: "com.apple.voice.compact.en-US.Samantha" };
+    expect(voiceScore(premiumZoe)).toBeGreaterThan(voiceScore(compactSamantha));
   });
 });
 
