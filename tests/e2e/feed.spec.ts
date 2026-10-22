@@ -1,10 +1,13 @@
 import { expect, test, type Page } from "@playwright/test";
 
-const PASSCODE = process.env.APP_PASSCODE ?? "";
-
+/** Sign in as the throwaway test reader created in global-setup (never the owner). */
 async function login(page: Page) {
-  const res = await page.request.post("/api/login", { data: { passcode: PASSCODE } });
-  expect(res.ok(), "login with APP_PASSCODE").toBeTruthy();
+  const base = new URL(test.info().project.use.baseURL!);
+  const token = process.env.E2E_SESSION!;
+  await page.context().addCookies([
+    { name: "stash_session", value: token, domain: base.hostname, path: "/", httpOnly: true, secure: base.protocol === "https:", sameSite: "Lax" },
+    { name: "stash_uid", value: process.env.E2E_UID!, domain: base.hostname, path: "/", secure: base.protocol === "https:", sameSite: "Lax" },
+  ]);
   await page.goto("/");
   await expect(page.locator(".feed-item[data-index='0'] .face-front")).toBeVisible();
 }
@@ -156,6 +159,23 @@ test.describe("feed and card flip", () => {
     await expect(card.getByText("Concept", { exact: true })).toBeVisible();
     await context.setOffline(false);
   });
+});
+
+test("passcode backup login still works", async ({ request }) => {
+  const res = await request.post("/api/login", { data: { passcode: "definitely-wrong" } });
+  expect(res.status()).toBe(401);
+});
+
+test("login page offers Google sign-in", async ({ browser }) => {
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await page.goto("/login");
+  const google = page.getByRole("link", { name: "Continue with Google" });
+  await expect(google).toBeVisible();
+  const res = await page.request.get((await google.getAttribute("href"))!, { maxRedirects: 0 });
+  expect(res.status()).toBe(307);
+  expect(res.headers().location).toContain("accounts.google.com");
+  await ctx.close();
 });
 
 test("login is required", async ({ browser }) => {

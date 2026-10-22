@@ -43,7 +43,9 @@ GitHub Actions (every 30 min) ──POST /api/ingest (Bearer INGEST_SECRET)─�
   - Focus moves to the back's header and returns to Details. The hidden side is `inert`.
 - **PWA**. `app/manifest.ts`, icons in `public/icons`, and `public/sw.js`, which caches pages network-first and build assets cache-first. The last 50 cards (front and back) are kept in IndexedDB for offline reading.
 - **Security**:
-  - The passcode is exchanged for an httpOnly signed JWT cookie (jose, 90 days). Changing `APP_PASSCODE` logs out every session.
+  - Google sign-in uses the authorization-code flow with PKCE and `state`. The ID token is verified against Google's published keys (issuer, audience, expiry, verified email).
+  - Sessions are httpOnly signed JWT cookies (jose, 90 days). The passcode (owner backup) is exchanged for the same kind of cookie, and changing `APP_PASSCODE` logs out passcode sessions.
+  - Feed cursors are signed and bound to their user.
   - `src/proxy.ts` gates every route, and each API handler re-checks.
   - Login is rate-limited (5 attempts per 15 minutes per IP).
   - RLS is on for every table with no policies, and anon/authenticated roles have no grants. Only the server-side secret key can read or write.
@@ -59,6 +61,22 @@ GitHub Actions (every 30 min) ──POST /api/ingest (Bearer INGEST_SECRET)─�
 **Add to home screen:**
 - **iPhone (Safari):** tap Share → **Add to Home Screen** → **Add**.
 - **Android (Chrome):** tap the **⋮** menu → **Add to Home screen** (or **Install app**) → **Install**.
+
+## Sharing with friends (Google sign-in)
+
+Each Google account is a separate reader: own seen-history ("never repeats" is per person), Library, collections, likes, streak and topic preferences. The idea pool is shared, so more readers barely add AI usage. Ingest tops up for whoever has the fewest unseen ideas left.
+
+- **Invite-only.** Add a friend's Gmail on **Settings → Behind the scenes → People**, or wait for their request.
+- **Requests.** Someone not on the list who signs in with Google sees **Request access**. Submitting it emails the owner (`OWNER_EMAIL`) through Resend's free tier, at most once a day per person. Approve or deny under People. Removing someone locks them out within a minute; their history is kept unless you delete their user.
+- **Owner.** `OWNER_EMAIL` is the owner account. The passcode is a backup that logs in as the owner.
+- **Shared phones.** Logging out wipes that device's offline cards and queued events.
+
+Setting it up from scratch:
+1. Google Cloud Console → Google Auth Platform: External audience, **Publish app** (only basic `openid email profile` scopes, so no review), then create a **Web application** client. Add redirect URIs `<SITE_URL>/api/auth/google/callback` and `http://localhost:3000/api/auth/google/callback`. Put `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `.env.local`.
+2. Sign up at resend.com **with `OWNER_EMAIL`**, create an API key, and set `RESEND_API_KEY`. No domain needed: the free sender can only email the account owner, which is where requests go.
+3. `npm run setup` pushes the new variables to Vercel and redeploys.
+
+Check isolation any time with `npx tsx --conditions=react-server scripts/verify-isolation.ts`. It creates a temporary reader, compares it with the owner through the live API, then deletes it.
 
 ## Setup from scratch
 
@@ -82,7 +100,7 @@ npm run seed                 # fill the buffer (runs the ingest pipeline locally
 | Check every source live | `npm run sources:check` |
 | Check LLM keys and models | `npm run llm:check` |
 | Apply new migrations | add `supabase/migrations/<timestamp>_name.sql`, then `npm run db:migrate` (or `supabase db push`) |
-| Tests / lint / types | `npm test`, `npm run lint`, `npm run typecheck`, `npm run test:e2e` (Playwright, mobile touch) |
+| Tests / lint / types | `npm test`, `npm run lint`, `npm run typecheck`, `npm run test:e2e` (Playwright, mobile touch; runs as a throwaway test reader, never the owner) |
 
 ### Rotate or add LLM keys
 Put several keys in one variable, comma-separated (`GROQ_API_KEYS=key1,key2`). Update `.env.local`, then:
