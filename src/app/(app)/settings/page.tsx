@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { useSettings } from "@/lib/client/settings";
-import { activeVoiceLabel, canSpeak, rankedVoices, speak, voiceQuality } from "@/lib/client/speak";
+import { activeVoiceLabel, canSpeak, rankedVoices, speak, stopSpeaking, voiceQuality } from "@/lib/client/speak";
+import { naturalStatus, naturalVoiceFor, playNatural, subscribeNatural } from "@/lib/client/natural";
+import { NATURAL_PREFIX, NATURAL_VOICES, naturalLabel, SAMPLE_TEXT } from "@/lib/tts/voices";
 import { toast } from "@/components/Toast";
 import { clearDeviceData } from "@/lib/client/cache";
 
@@ -15,6 +17,8 @@ export default function SettingsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const speechOk = useSyncExternalStore(noopSubscribe, canSpeak, () => false);
   const me = useMe();
+  const natural = useSyncExternalStore(subscribeNatural, naturalStatus, () => null);
+  const naturalVoice = naturalVoiceFor(s.voice);
 
   useEffect(() => {
     if (!canSpeak()) return;
@@ -101,43 +105,75 @@ export default function SettingsPage() {
               onChange={(e) => update({ voice: e.target.value || null })}
               className="field-input compact min-w-0 flex-1"
             >
-              <option value="">Automatic (most natural installed)</option>
-              {voices.map((v) => (
-                <option key={v.name} value={v.name}>
-                  {v.name}
-                  {voiceQuality(v) && !v.name.toLowerCase().includes(voiceQuality(v)!.toLowerCase()) ? ` (${voiceQuality(v)})` : ""}
-                </option>
-              ))}
+              <option value="">Automatic</option>
+              {natural?.enabled ? (
+                <optgroup label="Natural voices (online)">
+                  {NATURAL_VOICES.map((v) => (
+                    <option key={v.id} value={`${NATURAL_PREFIX}${v.id}`}>
+                      {v.label}
+                    </option>
+                  ))}
+                </optgroup>
+              ) : null}
+              <optgroup label="On this device">
+                {voices.map((v) => (
+                  <option key={v.name} value={v.name}>
+                    {v.name}
+                    {voiceQuality(v) && !v.name.toLowerCase().includes(voiceQuality(v)!.toLowerCase()) ? ` (${voiceQuality(v)})` : ""}
+                  </option>
+                ))}
+              </optgroup>
             </select>
             <button
               type="button"
               className="pill label rounded-xl border border-line px-3.5 text-[14px]"
-              onClick={() =>
-                speak("This is how your ideas will sound.", {
+              onClick={() => {
+                stopSpeaking();
+                if (naturalVoice) {
+                  playNatural({
+                    id: "sample",
+                    part: "front",
+                    voice: naturalVoice,
+                    rate: s.rate,
+                    onFail: () => toast("The natural voice isn't available right now. Tap Test again to hear your phone's voice."),
+                  });
+                  return;
+                }
+                speak(SAMPLE_TEXT, {
                   voice: s.voice,
                   rate: s.rate,
                   onFail: () => toast("Read-aloud didn't start. On iPhone, turn off Silent mode and check the volume, then try again."),
-                })
-              }
+                });
+              }}
             >
               Test
             </button>
           </div>
-          {voices.length > 0 ? (
-            <p className="mt-2 text-[13px] text-muted">
-              Reading with: <span className="text-text">{activeVoiceLabel(s.voice) ?? "system default"}</span>
-            </p>
-          ) : null}
-          <p className="mt-2 text-[13px] leading-relaxed text-muted">
-            Hearing nothing on iPhone? Silent mode can mute read-aloud. Turn it off (Control Center or the side switch /
-            Action button) and check the volume.
+          <p className="mt-2 text-[13px] text-muted">
+            Reading with:{" "}
+            <span className="text-text">
+              {naturalVoice ? `${naturalLabel(naturalVoice)} (natural, online)` : (activeVoiceLabel(s.voice) ?? "system default")}
+            </span>
           </p>
-          {voices.length > 0 && !voiceQuality(voices[0]) ? (
+          {naturalVoice && natural ? (
             <p className="mt-2 text-[13px] leading-relaxed text-muted">
-              On iPhone, web apps can only use the voices that come with the phone. Voices you download in Settings
-              (Premium or Enhanced) don&apos;t show up here, so pick the one you like best from the list above.
+              Natural voices need a connection. Offline, or once this month&apos;s free allowance is used (
+              {Math.round((natural.used / natural.limit) * 100)}% so far), Stash uses your phone&apos;s voice instead.
             </p>
-          ) : null}
+          ) : (
+            <>
+              <p className="mt-2 text-[13px] leading-relaxed text-muted">
+                Hearing nothing on iPhone? Silent mode can mute read-aloud. Turn it off (Control Center or the side switch /
+                Action button) and check the volume.
+              </p>
+              {voices.length > 0 && !voiceQuality(voices[0]) ? (
+                <p className="mt-2 text-[13px] leading-relaxed text-muted">
+                  On iPhone, web apps can only use the voices that come with the phone. Voices you download in Settings
+                  (Premium or Enhanced) don&apos;t show up here, so pick the one you like best from the list above.
+                </p>
+              ) : null}
+            </>
+          )}
           <label htmlFor="rate" className="mt-3 flex items-center justify-between text-[13px] text-muted">
             Speed <span>{s.rate.toFixed(1)}×</span>
           </label>

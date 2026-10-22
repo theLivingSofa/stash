@@ -5,6 +5,7 @@ import type { Card } from "@/lib/types";
 import { track } from "@/lib/client/events";
 import { patchCachedCard } from "@/lib/client/cache";
 import { canSpeak, cardSpeech, speak, stopSpeaking } from "@/lib/client/speak";
+import { naturalVoiceFor, playNatural, subscribeNatural } from "@/lib/client/natural";
 import { useSettings } from "@/lib/client/settings";
 import { IconBookmark, IconLess, IconMore, IconShare, IconSpeak } from "./Icons";
 import { toast } from "./Toast";
@@ -43,6 +44,8 @@ export function CardActions({
   const speaking = useSpeaking(card.id);
   const [pop, setPop] = useState(false);
   const speechOk = useSyncExternalStore(noopSubscribe, canSpeak, () => false);
+  // Loads whether the natural voice is on (once per visit).
+  useSyncExternalStore(subscribeNatural, () => 0, () => 0);
 
   const save = () => {
     const saved = !card.saved;
@@ -89,6 +92,23 @@ export function CardActions({
       return;
     }
     setSpeaking(card.id);
+    const done = () => speakingId === card.id && setSpeaking(null);
+    const natural = naturalVoiceFor(settings.voice);
+    if (natural) {
+      playNatural({
+        id: card.id,
+        part: includeBack ? "full" : "front",
+        voice: natural,
+        rate: settings.rate,
+        title: card.title ?? undefined,
+        onEnd: done,
+        onFail: () => {
+          done();
+          toast("The natural voice isn't available right now. Tap again to use your phone's voice.");
+        },
+      });
+      return;
+    }
     speak(cardSpeech(card, includeBack), {
       voice: settings.voice,
       rate: settings.rate,

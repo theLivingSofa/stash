@@ -1,21 +1,10 @@
 "use client";
 
-import type { Card } from "../types";
+import { stopNatural } from "./natural";
+
+export { cardSpeech } from "../speech-text";
 
 export const canSpeak = () => typeof window !== "undefined" && "speechSynthesis" in window;
-
-export function cardSpeech(card: Card, includeBack: boolean): string {
-  const parts = [card.title ? `${card.title}.` : "", card.text];
-  if (includeBack && card.back) {
-    parts.push(
-      "Concept.", card.back.concept,
-      "Where it comes from.", card.back.origin,
-      "The thinking behind it.", card.back.reasoning,
-      "Example.", card.back.example,
-    );
-  }
-  return parts.filter(Boolean).join(" ");
-}
 
 /**
  * Split into sentence-sized chunks. Long single utterances are unreliable on
@@ -208,6 +197,7 @@ export function speak(text: string, opts: SpeakOptions) {
 }
 
 export function stopSpeaking() {
+  stopNatural();
   if (!canSpeak()) return;
   session++;
   window.speechSynthesis.cancel();
