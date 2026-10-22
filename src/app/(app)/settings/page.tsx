@@ -127,12 +127,7 @@ export default function SettingsPage() {
               Test
             </button>
           </div>
-          {natural?.enabled ? (
-            <p className="mt-2 text-[13px] leading-relaxed text-muted">
-              Neerja needs a connection. Offline, or once this month&apos;s free allowance is used (
-              {Math.round((natural.used / natural.limit) * 100)}% so far), Stash reads with your phone&apos;s voice instead.
-            </p>
-          ) : (
+          {naturalVoice ? null : (
             <p className="mt-2 text-[13px] leading-relaxed text-muted">
               Hearing nothing on iPhone? Silent mode can mute read-aloud. Turn it off (Control Center or the side switch /
               Action button) and check the volume.
