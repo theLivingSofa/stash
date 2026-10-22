@@ -55,6 +55,19 @@ const ago = (iso: string | null) => {
   return `${Math.round(s / 86400)} d ago`;
 };
 
+function RunStatus({ status }: { status: string }) {
+  return <span className={status === "ok" ? "text-accent" : status === "error" ? "text-danger" : "text-muted"}>{status}</span>;
+}
+
+function Chevron({ small }: { small?: boolean }) {
+  const size = small ? 14 : 18;
+  return (
+    <svg className="chev shrink-0 text-muted" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
 export default function AdminPage() {
   const [d, setD] = useState<AdminData | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -70,7 +83,7 @@ export default function AdminPage() {
 
   const today = new Date().toISOString().slice(0, 10);
   const usageToday = d.usage.filter((u) => u.day === today);
-  const failing = d.sources.filter((s) => s.fail_count > 0);
+  const failing = d.sources.filter((s) => s.enabled && s.fail_count > 0);
   const card = "rounded-2xl border border-line bg-surface p-4";
   const h = "mb-3 text-[15px] font-medium";
 
@@ -115,26 +128,61 @@ export default function AdminPage() {
         </ul>
       </section>
 
-      <section className={`${card} mt-3`}>
-        <h2 className={h}>Recent ingest runs</h2>
-        <ul className="space-y-2.5">
-          {d.runs.map((r) => (
-            <li key={r.id} className="border-b border-line pb-2.5 last:border-0">
-              <div className="flex justify-between gap-2">
-                <span>
-                  {r.trigger} · <span className={r.status === "ok" ? "text-accent" : r.status === "error" ? "text-danger" : "text-muted"}>{r.status}</span>
-                </span>
-                <span className="text-muted">{ago(r.started_at)}</span>
-              </div>
-              <div className="text-[13px] text-muted">
-                +{r.ideas_created} ideas, {r.ideas_rejected} rejected, {r.articles_processed} articles, {r.sources_polled} sources
-                {Object.keys(r.providers ?? {}).length ? ` · ${Object.entries(r.providers).map(([k, v]) => `${k} ×${v}`).join(", ")}` : ""}
-              </div>
-              {r.errors?.length ? <div className="mt-1 line-clamp-2 text-[12px] text-faint">{r.errors.join(" | ")}</div> : null}
-            </li>
-          ))}
+      <details className={`${card} dropdown mt-3`}>
+        <summary className="cursor-pointer" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+          <span className="min-w-0">
+            <span className="block text-[15px] font-medium">Recent ingest runs ({d.runs.length})</span>
+            {d.runs[0] ? (
+              <span className="mt-0.5 block text-[13px] text-muted">
+                Latest: {d.runs[0].trigger}, <RunStatus status={d.runs[0].status} />, +{d.runs[0].ideas_created} ideas, {ago(d.runs[0].started_at)}
+              </span>
+            ) : (
+              <span className="mt-0.5 block text-[13px] text-muted">No runs yet</span>
+            )}
+          </span>
+          <Chevron />
+        </summary>
+        <ul className="mt-3 space-y-2.5 border-t border-line pt-3">
+          {d.runs.map((r) => {
+            const head = (
+              <>
+                <div className="flex justify-between gap-2">
+                  <span>
+                    {r.trigger} · <RunStatus status={r.status} />
+                  </span>
+                  <span className="flex items-center gap-1.5 text-muted">
+                    {ago(r.started_at)}
+                    {r.errors?.length ? <Chevron small /> : null}
+                  </span>
+                </div>
+                <div className="text-[13px] text-muted">
+                  +{r.ideas_created} ideas, {r.ideas_rejected} rejected, {r.articles_processed} articles, {r.sources_polled} sources
+                  {Object.keys(r.providers ?? {}).length ? ` · ${Object.entries(r.providers).map(([k, v]) => `${k} ×${v}`).join(", ")}` : ""}
+                  {r.errors?.length ? ` · ${r.errors.length} issue${r.errors.length > 1 ? "s" : ""}` : ""}
+                </div>
+              </>
+            );
+            return (
+              <li key={r.id} className="border-b border-line pb-2.5 last:border-0">
+                {r.errors?.length ? (
+                  <details className="dropdown">
+                    <summary className="cursor-pointer">{head}</summary>
+                    <ul className="mt-2 space-y-1 rounded-xl bg-surface-2 p-2.5 text-[12px] leading-relaxed text-muted">
+                      {r.errors.map((e, i) => (
+                        <li key={i} className="break-words">
+                          {e}
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                ) : (
+                  head
+                )}
+              </li>
+            );
+          })}
         </ul>
-      </section>
+      </details>
 
       <section className={`${card} mt-3`}>
         <h2 className={h}>AI providers</h2>

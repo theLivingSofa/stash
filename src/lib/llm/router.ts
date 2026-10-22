@@ -49,6 +49,8 @@ export interface AttemptLog {
 }
 
 export class AllProvidersExhaustedError extends Error {
+  /** "deadline": ran out of the caller's time budget before trying everything. */
+  readonly reason: "exhausted" | "deadline";
   constructor(public attempts: AttemptLog[]) {
     super(
       `All LLM providers exhausted (${attempts.length} attempts): ` +
@@ -59,6 +61,7 @@ export class AllProvidersExhaustedError extends Error {
           .join(" | "),
     );
     this.name = "AllProvidersExhaustedError";
+    this.reason = attempts.at(-1)?.detail === "deadline" ? "deadline" : "exhausted";
   }
 }
 

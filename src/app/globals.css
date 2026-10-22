@@ -331,3 +331,26 @@ button {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* Native <details> dropdowns (admin): custom chevron instead of the marker. */
+.dropdown summary {
+  display: block;
+  list-style: none;
+}
+.dropdown summary::marker {
+  content: "";
+}
+.dropdown summary::-webkit-details-marker {
+  display: none;
+}
+.dropdown .chev {
+  transition: transform 160ms ease-out;
+}
+.dropdown[open] > summary .chev {
+  transform: rotate(180deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .dropdown .chev {
+    transition: none;
+  }
+}

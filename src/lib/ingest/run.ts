@@ -30,7 +30,7 @@ export interface IngestOptions {
 }
 
 export interface IngestReport {
-  status: "ok" | "locked" | "buffer-full" | "exhausted" | "error";
+  status: "ok" | "locked" | "buffer-full" | "time-limit" | "exhausted" | "error";
   runId?: number;
   unseenBefore: number;
   unseenAfter?: number;
@@ -124,6 +124,8 @@ export async function runIngest(opts: IngestOptions): Promise<IngestReport> {
     }
 
     let exhausted = false;
+    let hitTimeLimit = false;
+    let allOut = false;
     const focusQueue = [...focusIds];
     const worker = async () => {
       while (!exhausted && deadline - Date.now() > 25_000) {
@@ -135,7 +137,13 @@ export async function runIngest(opts: IngestOptions): Promise<IngestReport> {
         } catch (e) {
           if (e instanceof AllProvidersExhaustedError) {
             exhausted = true;
-            report.errors.push(e.message.slice(0, 300));
+            if (e.reason === "deadline") {
+              hitTimeLimit = true;
+              report.errors.push(`Stopped at the time limit; unfinished articles stay queued. ${e.message}`.slice(0, 300));
+            } else {
+              allOut = true;
+              report.errors.push(e.message.slice(0, 300));
+            }
           } else {
             report.errors.push(`batch: ${e instanceof Error ? e.message : String(e)}`.slice(0, 300));
           }
@@ -144,7 +152,8 @@ export async function runIngest(opts: IngestOptions): Promise<IngestReport> {
       }
     };
     await Promise.all(Array.from({ length: WORKERS }, () => worker()));
-    if (exhausted) report.status = "exhausted";
+    if (allOut) report.status = "exhausted";
+    else if (hitTimeLimit) report.status = "time-limit";
   } catch (e) {
     report.status = "error";
     report.errors.push(e instanceof Error ? e.message : String(e));

@@ -108,3 +108,16 @@ describe("classifyFailure", () => {
     expect(b.cooldownUntil! - now).toBeGreaterThan(a.cooldownUntil! - now);
   });
 });
+
+describe("exhaustion reason", () => {
+  it("reports 'deadline' when the time budget runs out, 'exhausted' when every provider failed", async () => {
+    const { f } = mockFetch(() => ({ status: 503, body: "down" }));
+    const { r } = router(f);
+    const all = await r.complete({ system: "s", user: "u" }, parseJson).catch((e) => e);
+    expect(all).toBeInstanceOf(AllProvidersExhaustedError);
+    expect(all.reason).toBe("exhausted");
+    const { r: r2 } = router(mockFetch(() => ok('{"ok":true}')).f);
+    const late = await r2.complete({ system: "s", user: "u", deadline: 1_000_000 + 5_000 }, parseJson).catch((e) => e);
+    expect(late.reason).toBe("deadline");
+  });
+});
