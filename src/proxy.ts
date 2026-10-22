@@ -5,6 +5,7 @@ const PUBLIC = new Set([
   "/login",
   "/api/login",
   "/api/ingest",
+  "/api/tts/backfill",
   "/api/auth/google",
   "/api/auth/google/callback",
   "/request-access",

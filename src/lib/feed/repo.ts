@@ -1,12 +1,13 @@
 import "server-only";
 import { db, must } from "../db";
+import { audioReady } from "../tts/backfill";
 import type { CardRow, FeedFilter, FeedRepo, Tier } from "./chain";
 
 export class DbFeedRepo implements FeedRepo {
   constructor(private userId: string) {}
 
   async candidates(sessionId: string, tier: Tier, filter: FeedFilter, limit: number): Promise<CardRow[]> {
-    return (must(
+    const rows = (must(
       await db().rpc("feed_candidates", {
         p_user: this.userId,
         p_session: sessionId,
@@ -18,6 +19,9 @@ export class DbFeedRepo implements FeedRepo {
       }),
       `feed_candidates(${tier})`,
     ) ?? []) as CardRow[];
+    const ready = await audioReady(rows.map((r) => r.id));
+    for (const r of rows) r.audio = ready.has(r.id);
+    return rows;
   }
 
   async affinity(): Promise<Map<string, number>> {

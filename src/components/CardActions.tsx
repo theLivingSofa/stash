@@ -97,7 +97,7 @@ export function CardActions({
     if (natural) {
       playNatural({
         id: card.id,
-        part: includeBack ? "full" : "front",
+        part: "front",
         voice: natural,
         rate: settings.rate,
         title: card.title ?? undefined,
@@ -109,7 +109,7 @@ export function CardActions({
       });
       return;
     }
-    speak(cardSpeech(card, includeBack), {
+    speak(cardSpeech(card, false), {
       voice: settings.voice,
       rate: settings.rate,
       onEnd: () => speakingId === card.id && setSpeaking(null),
@@ -131,7 +131,7 @@ export function CardActions({
       <button type="button" className={btn} onClick={() => react(-1)} aria-pressed={card.reaction === -1} aria-label="Less like this">
         <IconLess size={21} filled={card.reaction === -1} className={card.reaction === -1 ? "text-danger" : undefined} />
       </button>
-      {speechOk ? (
+      {speechOk && !includeBack ? (
         <button type="button" className={btn} onClick={toggleSpeak} aria-pressed={speaking} aria-label={speaking ? "Stop reading aloud" : "Read aloud"}>
           <IconSpeak size={21} active={speaking} style={speaking ? { color: "var(--light, var(--accent))" } : undefined} />
         </button>

@@ -18,7 +18,8 @@
     "sources:check": "tsx --conditions=react-server scripts/check-sources.ts",
     "llm:check": "tsx --conditions=react-server scripts/llm-check.ts",
     "icons": "tsx scripts/gen-icons.ts",
-    "teardown": "tsx scripts/teardown.ts"
+    "teardown": "tsx scripts/teardown.ts",
+    "audio:backfill": "tsx --conditions=react-server scripts/audio-backfill.ts"
   },
   "dependencies": {
     "@mozilla/readability": "^0.6.0",

@@ -32,6 +32,8 @@ export interface CardRow {
   seen_at: string | null;
   saved_at: string | null;
   reaction: number | null;
+  /** Read-aloud audio ready (set by the repo, not the SQL row). */
+  audio?: boolean;
 }
 
 export interface FeedRepo {

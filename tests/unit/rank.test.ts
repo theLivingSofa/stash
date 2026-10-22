@@ -52,6 +52,20 @@ describe("rankIdeas", () => {
     expect(other).toBeGreaterThanOrEqual(4); // exploration slice survives (20% of 20)
   });
 
+  it("puts ideas with read-aloud audio ready first when there are enough", () => {
+    const withAudio = pool().map((c, i) => ({ ...c, audio: i % 4 === 0 })); // 25 of 100 ready
+    const out = rankIdeas(withAudio, new Map([["philosophy", 12]]), { n: 20, now: NOW, rng: seeded(3) });
+    expect(out).toHaveLength(20);
+    expect(out.every((o) => o.audio)).toBe(true);
+  });
+
+  it("still fills the page when few ideas have audio", () => {
+    const withAudio = pool().map((c, i) => ({ ...c, audio: i < 5 }));
+    const out = rankIdeas(withAudio, new Map(), { n: 20, now: NOW, rng: seeded(5) });
+    expect(out).toHaveLength(20);
+    expect(out.filter((o) => o.audio)).toHaveLength(5);
+  });
+
   it("handles fewer candidates than requested", () => {
     expect(rankIdeas(pool().slice(0, 3), new Map(), { n: 20, now: NOW })).toHaveLength(3);
     expect(rankIdeas([], new Map(), { n: 20 })).toEqual([]);

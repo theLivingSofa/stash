@@ -1,7 +1,7 @@
 /**
  * Ranking for unseen ideas. Pure and deterministic given `rng`, so it is unit-tested.
  *
- *   score = affinity(topics) + freshness + jitter
+ *   score = affinity(topics) + freshness + jitter (+ a boost when read-aloud audio is ready)
  *
  * affinity comes from interaction events with exponential decay (computed in
  * SQL: save +3, like/share +2, flip +0.5, unsave -1, dislike -3, 14-day half-life),
@@ -14,7 +14,12 @@ export interface RankCandidate {
   id: string;
   topics: string[];
   createdAt: string;
+  /** Natural read-aloud audio is already made for this idea. */
+  audio?: boolean;
 }
+
+/** Big enough that ready-to-play ideas come first whenever there are enough of them. */
+export const AUDIO_BOOST = 3;
 
 export interface RankOptions {
   n: number;
@@ -62,13 +67,20 @@ export function rankIdeas<T extends RankCandidate>(
 
   const scored = candidates.map((c) => ({
     c,
-    score: affinityScore(c.topics, affinity) + freshness(c.createdAt, now, freshnessHalfLifeDays) + rng() * 0.5,
+    score:
+      affinityScore(c.topics, affinity) +
+      freshness(c.createdAt, now, freshnessHalfLifeDays) +
+      rng() * 0.5 +
+      (c.audio ? AUDIO_BOOST : 0),
   }));
 
   const allTopics = Array.from(new Set(candidates.flatMap((c) => c.topics)));
   const explore = exploratoryTopics(allTopics, affinity);
   const exploreSlots = Math.min(Math.round(n * exploreRatio), n);
-  const explorePool = scored.filter((s) => s.c.topics.some((t) => explore.has(t)));
+  const exploreAll = scored.filter((s) => s.c.topics.some((t) => explore.has(t)));
+  // Exploration also prefers ideas that are ready to play, when there are enough.
+  const exploreReady = exploreAll.filter((s) => s.c.audio);
+  const explorePool = exploreReady.length >= exploreSlots ? exploreReady : exploreAll;
 
   const picked = new Set<string>();
   const exploration: T[] = [];

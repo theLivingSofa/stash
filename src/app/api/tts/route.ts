@@ -6,6 +6,7 @@ import { getCards } from "@/lib/feed/repo";
 import { cardSpeech } from "@/lib/speech-text";
 import { audioLink, charge, refund, storeAudio, storedAudio, synthesize, ttsConfig, usedThisMonth } from "@/lib/tts/server";
 import { DEFAULT_NATURAL, isNaturalVoice, SAMPLE_TEXT } from "@/lib/tts/voices";
+import { markAudioReady } from "@/lib/tts/backfill";
 
 export const maxDuration = 30;
 
@@ -54,7 +55,13 @@ export async function GET(req: Request) {
     return res;
   };
 
-  if (await storedAudio(c, key).catch(() => false)) return redirect();
+  // The feed prefers ideas whose default-voice front is ready.
+  const marks = id !== "sample" && part === "front" && voice === DEFAULT_NATURAL;
+
+  if (await storedAudio(c, key).catch(() => false)) {
+    if (marks) await markAudioReady(id).catch(() => {});
+    return redirect();
+  }
 
   if (!(await charge(c, text.length))) return fail(429, "monthly natural-voice allowance used up");
   let audio: ArrayBuffer;
@@ -69,6 +76,7 @@ export async function GET(req: Request) {
   try {
     // Store first, then stream from B2: iPhone audio wants a server that can seek.
     await storeAudio(c, key, audio);
+    if (marks) await markAudioReady(id).catch(() => {});
     return redirect();
   } catch (e) {
     console.error("[tts] store", e);
