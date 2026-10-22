@@ -14,6 +14,7 @@ export class DbFeedRepo implements FeedRepo {
         p_topic: filter.topic ?? null,
         p_concept: filter.concept ?? null,
         p_limit: limit,
+        p_embedding: filter.concept && filter.embedding ? JSON.stringify(filter.embedding) : null,
       }),
       `feed_candidates(${tier})`,
     ) ?? []) as CardRow[];

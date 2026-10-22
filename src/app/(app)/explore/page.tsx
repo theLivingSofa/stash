@@ -41,7 +41,8 @@ export default function ExplorePage() {
         />
       </form>
       <p className="mt-2 px-1 text-[13px] leading-relaxed text-faint">
-        For example Stoicism, entropy, Ada Lovelace. Stash fetches new ideas on it if you&apos;ve run out.
+        Matches by meaning as well as words, so &ldquo;happiness&rdquo; also finds well-being. Names work too, like Ada
+        Lovelace. If you&apos;ve run out, Stash fetches new ideas on it.
       </p>
 
       <h2 className="mt-7 mb-3 px-1 text-[15px] font-medium">Topics</h2>

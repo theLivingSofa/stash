@@ -92,6 +92,13 @@ describe("buildPage (no-repeat endless feed)", () => {
     expect(page.needFocus).toBe(true);
   });
 
+  it("keeps best-match-first order for concept searches", async () => {
+    const rows = ["c", "a", "b"].map((id) => row(id, "science", { text: `idea ${id} stoic` }));
+    const repo = new FakeRepo(rows);
+    const page = await buildPage(repo, { sessionId: "s", filter: { concept: "stoic" } });
+    expect(page.cards.slice(0, 3).map((c) => c.id)).toEqual(["c", "a", "b"]);
+  });
+
   it("asks for ingest whenever the unseen buffer is below target", async () => {
     const low = await buildPage(new FakeRepo(many(30)), { sessionId: "s", filter: {} });
     expect(low.needIngest).toBe(true);

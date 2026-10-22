@@ -10,6 +10,8 @@ export type Tier = "unseen" | "seen" | "saved" | "any";
 export interface FeedFilter {
   topic?: string | null;
   concept?: string | null;
+  /** Embedding of `concept`, for meaning-based matches (null = keywords only). */
+  embedding?: number[] | null;
 }
 
 /** Row shape returned by the feed_candidates / get_cards SQL functions. */
@@ -68,6 +70,7 @@ export function toCard(r: CardRow, kind: CardKind): Card {
 }
 
 export function filterLabel(f: FeedFilter): string | undefined {
+  // (the embedding is an implementation detail, never a label)
   return f.concept ?? f.topic ?? undefined;
 }
 
@@ -104,11 +107,15 @@ export async function buildPage(
   const fill = async (filter: FeedFilter) => {
     const unseen = (await repo.candidates(opts.sessionId, "unseen", filter, CANDIDATE_POOL)).filter((r) => !taken.has(r.id));
     if (hasFilter(filter) && unseen.length < size) needFocus = true;
-    const ranked = rankIdeas(
-      unseen.map((u) => ({ ...u, createdAt: u.created_at })),
-      affinity,
-      { n: size - cards.length, rng, now: opts.now },
-    );
+    // Concept searches come back best-match first; keep that order. Everything
+    // else gets the personal ranking (affinity, freshness, exploration).
+    const ranked = filter.concept
+      ? unseen.slice(0, size - cards.length)
+      : rankIdeas(
+          unseen.map((u) => ({ ...u, createdAt: u.created_at })),
+          affinity,
+          { n: size - cards.length, rng, now: opts.now },
+        );
     for (const r of ranked) {
       if (cards.length >= size) break;
       taken.add(r.id);

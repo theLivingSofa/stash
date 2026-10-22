@@ -6,6 +6,7 @@ import { DbFeedRepo } from "@/lib/feed/repo";
 import { runIngest } from "@/lib/ingest/run";
 import { FeedQuery } from "@/lib/schemas";
 import { isTopic } from "@/lib/topics";
+import { queryEmbedding } from "@/lib/search";
 import type { FeedPage } from "@/lib/types";
 
 export const maxDuration = 60;
@@ -24,6 +25,8 @@ export async function GET(req: NextRequest) {
     topic: topic && isTopic(topic) ? topic : null,
     concept: (cursor ? cursor.c : q.data.concept) || null,
   };
+
+  if (filter.concept) filter.embedding = await queryEmbedding(filter.concept);
 
   const repo = new DbFeedRepo(user.id);
   let result = await buildPage(repo, { sessionId, filter });

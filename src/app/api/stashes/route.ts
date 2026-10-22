@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db, must } from "@/lib/db";
 import { fail, getUser, json } from "@/lib/api";
 import { toCard, type CardRow } from "@/lib/feed/chain";
+import { queryEmbedding } from "@/lib/search";
 
 const Query = z.object({
   q: z.string().trim().max(120).optional(),
@@ -17,6 +18,7 @@ export async function GET(req: NextRequest) {
   const q = Query.safeParse(Object.fromEntries(req.nextUrl.searchParams));
   if (!q.success) return fail(400, "bad query");
   const limit = 30;
+  const embedding = q.data.q ? await queryEmbedding(q.data.q) : null;
   const rows = must(
     await db().rpc("search_saved", {
       p_user: user.id,
@@ -25,6 +27,7 @@ export async function GET(req: NextRequest) {
       p_limit: limit,
       p_offset: q.data.offset,
       p_kind: q.data.kind,
+      p_embedding: embedding ? JSON.stringify(embedding) : null,
     }),
     "search_saved",
   ) as CardRow[];
