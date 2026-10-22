@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 import { db, must } from "@/lib/db";
-import { fail, isAuthed, json } from "@/lib/api";
+import { fail, getUser, json } from "@/lib/api";
 import { toCard, type CardRow } from "@/lib/feed/chain";
 
 const Query = z.object({
@@ -12,12 +12,14 @@ const Query = z.object({
 });
 
 export async function GET(req: NextRequest) {
-  if (!(await isAuthed())) return fail(401, "unauthorized");
+  const user = await getUser();
+  if (!user) return fail(401, "unauthorized");
   const q = Query.safeParse(Object.fromEntries(req.nextUrl.searchParams));
   if (!q.success) return fail(400, "bad query");
   const limit = 30;
   const rows = must(
     await db().rpc("search_saved", {
+      p_user: user.id,
       p_q: q.data.q ?? null,
       p_collection: q.data.collection ?? null,
       p_limit: limit,

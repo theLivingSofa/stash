@@ -1,12 +1,13 @@
 import { z } from "zod";
-import { fail, isAuthed, json } from "@/lib/api";
+import { fail, getUser, json } from "@/lib/api";
 import { ensureBack } from "@/lib/ingest/deep";
 
 export const maxDuration = 60;
 
 /** Fallback: generate (and cache) the BACK for an idea that is missing one. */
 export async function POST(_req: Request, ctx: RouteContext<"/api/ideas/[id]/deep">) {
-  if (!(await isAuthed())) return fail(401, "unauthorized");
+  const user = await getUser();
+  if (!user) return fail(401, "unauthorized");
   const { id } = await ctx.params;
   if (!z.uuid().safeParse(id).success) return fail(400, "bad id");
   try {

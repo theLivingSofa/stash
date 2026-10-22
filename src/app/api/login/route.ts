@@ -1,12 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/lib/db";
-import { checkPasscode, createSessionToken, SESSION_COOKIE, SESSION_DAYS } from "@/lib/auth/session";
+import { checkPasscode } from "@/lib/auth/session";
+import { setSessionCookies } from "@/lib/auth/cookies";
+import { ownerUserId } from "@/lib/auth/users";
 import { LoginInput } from "@/lib/schemas";
 import { clientIp, fail } from "@/lib/api";
 
 const MAX_ATTEMPTS = 5;
 const WINDOW_MIN = 15;
 
+/** Owner backup login with the passcode (Google sign-in is the normal way in). */
 export async function POST(req: NextRequest) {
   const ip = clientIp(req);
   const since = new Date(Date.now() - WINDOW_MIN * 60_000).toISOString();
@@ -24,12 +27,6 @@ export async function POST(req: NextRequest) {
 
   await db().from("login_attempts").delete().eq("ip", ip);
   const res = NextResponse.json({ ok: true }, { headers: { "Cache-Control": "no-store" } });
-  res.cookies.set(SESSION_COOKIE, await createSessionToken(), {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: SESSION_DAYS * 86_400,
-  });
+  await setSessionCookies(res, { id: await ownerUserId(), email: null, role: "owner", via: "passcode" });
   return res;
 }

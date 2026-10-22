@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { People } from "./People";
 
 interface AdminData {
   bufferTarget: number;
@@ -64,7 +65,7 @@ export default function AdminPage() {
       .catch((e) => setErr(e.message));
   }, []);
 
-  if (err) return <p className="p-6 text-danger">Couldn&apos;t load admin data: {err}</p>;
+  if (err) return <p className="p-6 text-danger">{err === "HTTP 403" ? "Only the owner can see this page." : `Couldn't load admin data: ${err}`}</p>;
   if (!d) return <p className="p-6 text-muted">Loading…</p>;
 
   const today = new Date().toISOString().slice(0, 10);
@@ -77,11 +78,14 @@ export default function AdminPage() {
     <div className="absolute inset-0 overflow-y-auto overscroll-contain px-4 pt-1 pb-10 text-[14px]">
       <h1 className="mb-4 px-1 font-serif text-[22px]">Behind the scenes</h1>
 
+      <People />
+
       <section className={card}>
         <h2 className={h}>Buffer</h2>
         <dl className="grid grid-cols-3 gap-3">
           {[
-            ["Unseen", `${d.stats.unseen} / ${d.bufferTarget}`],
+            ["Unseen (you)", `${d.stats.unseen} / ${d.bufferTarget}`],
+            ["Lowest reader", (d.stats as { min_active_unseen?: number }).min_active_unseen ?? "–"],
             ["Total ideas", d.stats.total],
             ["Seen", d.stats.seen],
             ["Saved", d.stats.saved],

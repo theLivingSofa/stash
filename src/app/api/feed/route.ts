@@ -1,5 +1,5 @@
 import { after, type NextRequest } from "next/server";
-import { fail, isAuthed, json } from "@/lib/api";
+import { fail, getUser, json } from "@/lib/api";
 import { readCursor, signCursor } from "@/lib/auth/session";
 import { buildPage, type FeedFilter } from "@/lib/feed/chain";
 import { DbFeedRepo } from "@/lib/feed/repo";
@@ -11,11 +11,12 @@ import type { FeedPage } from "@/lib/types";
 export const maxDuration = 60;
 
 export async function GET(req: NextRequest) {
-  if (!(await isAuthed())) return fail(401, "unauthorized");
+  const user = await getUser();
+  if (!user) return fail(401, "unauthorized");
   const q = FeedQuery.safeParse(Object.fromEntries(req.nextUrl.searchParams));
   if (!q.success) return fail(400, "bad query");
 
-  const cursor = q.data.cursor ? await readCursor(q.data.cursor) : null;
+  const cursor = q.data.cursor ? await readCursor(q.data.cursor, user.id) : null;
   const sessionId = cursor?.s ?? crypto.randomUUID();
   const page = (cursor?.p ?? 0) + 1;
   const topic = cursor ? cursor.t : q.data.topic;
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest) {
     concept: (cursor ? cursor.c : q.data.concept) || null,
   };
 
-  const repo = new DbFeedRepo();
+  const repo = new DbFeedRepo(user.id);
   let result = await buildPage(repo, { sessionId, filter });
 
   if (result.cards.length === 0) {
@@ -45,7 +46,7 @@ export async function GET(req: NextRequest) {
   const body: FeedPage = {
     cards: result.cards,
     pending: result.cards.length === 0 ? true : undefined,
-    cursor: await signCursor({ s: sessionId, p: page, t: filter.topic ?? undefined, c: filter.concept ?? undefined }),
+    cursor: await signCursor({ u: user.id, s: sessionId, p: page, t: filter.topic ?? undefined, c: filter.concept ?? undefined }),
     widenedFrom: result.widenedFrom,
   };
   return json(body);

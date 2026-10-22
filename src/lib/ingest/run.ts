@@ -66,8 +66,9 @@ interface PreparedArticle {
   background: { title: string; extract: string } | null;
 }
 
+/** Unseen ideas for the active reader with the fewest left (drives the buffer). */
 export async function unseenCount(): Promise<number> {
-  return must(await db().rpc("unseen_count"), "unseen_count") as number;
+  return must(await db().rpc("min_active_unseen"), "min_active_unseen") as number;
 }
 
 export async function runIngest(opts: IngestOptions): Promise<IngestReport> {
@@ -227,7 +228,10 @@ export function pickDueSources(
 async function discoverDue(report: IngestReport, until: number, focusTopic?: string): Promise<number[]> {
   const { data: healthRows } = await db().from("sources").select("id, last_polled_at, fail_count");
   const health = new Map((healthRows ?? []).map((h) => [h.id as string, h as SourceHealth]));
-  const stats = must(await db().rpc("buffer_stats"), "buffer_stats") as { by_topic: { topic: string; unseen: number }[] };
+  const { data: owner } = await db().from("users").select("id").eq("role", "owner").limit(1).maybeSingle();
+  const stats = must(await db().rpc("buffer_stats", { p_user: owner?.id ?? null }), "buffer_stats") as {
+    by_topic: { topic: string; unseen: number }[];
+  };
   const unseenByTopic = new Map(stats.by_topic.map((t) => [t.topic, t.unseen]));
   const chosen = focusTopic
     ? SOURCES.filter((s) => s.topic === focusTopic).sort(() => Math.random() - 0.5).slice(0, 3)

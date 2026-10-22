@@ -1,16 +1,17 @@
 "use client";
 
 import type { EventKind } from "../types";
+import { currentUid } from "./user";
 
 /** Batches interaction events; flushes every few seconds and when the page hides. */
 type Ev = { id: string; kind: EventKind };
 let queue: Ev[] = [];
 let timer: ReturnType<typeof setTimeout> | null = null;
-const PENDING_KEY = "stash-pending-events";
+const pendingKey = () => `stash-pending-events:${currentUid()}`;
 
 function persist() {
   try {
-    localStorage.setItem(PENDING_KEY, JSON.stringify(queue));
+    localStorage.setItem(pendingKey(), JSON.stringify(queue));
   } catch {
     /* ignore */
   }
@@ -52,7 +53,8 @@ export async function flush(useBeacon = false): Promise<void> {
 
 export function initEvents() {
   try {
-    const saved = JSON.parse(localStorage.getItem(PENDING_KEY) ?? "[]") as Ev[];
+    queue = [];
+    const saved = JSON.parse(localStorage.getItem(pendingKey()) ?? "[]") as Ev[];
     if (Array.isArray(saved) && saved.length) {
       queue = saved.concat(queue);
       void flush();

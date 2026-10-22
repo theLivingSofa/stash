@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useSettings } from "@/lib/client/settings";
 import { canSpeak, rankedVoices, speak, voiceScore } from "@/lib/client/speak";
 import { toast } from "@/components/Toast";
+import { clearDeviceData } from "@/lib/client/cache";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function SettingsPage() {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const speechOk = useSyncExternalStore(noopSubscribe, canSpeak, () => false);
+  const me = useMe();
 
   useEffect(() => {
     if (!canSpeak()) return;
@@ -35,6 +37,7 @@ export default function SettingsPage() {
 
   async function logout() {
     await fetch("/api/logout", { method: "POST" });
+    await clearDeviceData();
     router.replace("/login");
   }
 
@@ -44,6 +47,7 @@ export default function SettingsPage() {
   return (
     <div className="absolute inset-0 overflow-y-auto overscroll-contain px-5 pt-1 pb-10">
       <h1 className="sr-only">Settings</h1>
+      <Account me={me} />
 
       <div className={row}>
         <span className="text-[15px]">Theme</span>
@@ -140,6 +144,7 @@ export default function SettingsPage() {
         </button>
       </div>
 
+      {me?.role === "owner" ? (
       <Link href="/admin" className={`${row} text-[15px]`}>
         <span>
           <span className="block">Behind the scenes</span>
@@ -149,6 +154,7 @@ export default function SettingsPage() {
           ›
         </span>
       </Link>
+      ) : null}
 
       <button type="button" onClick={logout} className="mt-6 px-1 text-[15px] text-danger">
         Log out
@@ -158,6 +164,46 @@ export default function SettingsPage() {
 }
 
 const noopSubscribe = () => () => {};
+
+interface Me {
+  email: string | null;
+  name: string | null;
+  avatar: string | null;
+  role: "owner" | "member";
+  via: "google" | "passcode";
+}
+
+function useMe(): Me | null {
+  const [me, setMe] = useState<Me | null>(null);
+  useEffect(() => {
+    fetch("/api/me", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setMe)
+      .catch(() => {});
+  }, []);
+  return me;
+}
+
+function Account({ me }: { me: Me | null }) {
+  if (!me) return <div className="h-[68px] border-b border-line" aria-hidden />;
+  return (
+    <div className="flex items-center gap-3 border-b border-line px-1 py-4">
+      {me.avatar ? (
+        // Google profile photo; tiny, so a plain img keeps it simple.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={me.avatar} alt="" width={36} height={36} referrerPolicy="no-referrer" className="h-9 w-9 rounded-full" />
+      ) : (
+        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-2 font-serif text-[16px]" aria-hidden>
+          {(me.name ?? me.email ?? "S").slice(0, 1).toUpperCase()}
+        </span>
+      )}
+      <span className="min-w-0">
+        <span className="block truncate text-[15px]">{me.name ?? (me.via === "passcode" ? "Owner (passcode)" : "Signed in")}</span>
+        <span className="block truncate text-[13px] text-muted">{me.email ?? "Signed in with the passcode"}</span>
+      </span>
+    </div>
+  );
+}
 
 function Switch({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
   return (

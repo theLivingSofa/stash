@@ -1,7 +1,8 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { SESSION_COOKIE, verifySessionToken } from "./auth/session";
+import { SESSION_COOKIE, verifySessionToken, type SessionUser } from "./auth/session";
+import { userAccess } from "./auth/users";
 
 export const noStore = { "Cache-Control": "private, no-store" };
 
@@ -13,10 +14,22 @@ export function fail(status: number, message: string) {
   return json({ error: message }, { status });
 }
 
-/** Defence in depth: the proxy already gates routes, but every handler re-checks. */
-export async function isAuthed(): Promise<boolean> {
+/**
+ * The signed-in user, or null. The proxy already gates routes; this re-checks
+ * the session and that the user is still allowed in (owner, or still on the list).
+ */
+export async function getUser(): Promise<SessionUser | null> {
   const jar = await cookies();
-  return verifySessionToken(jar.get(SESSION_COOKIE)?.value);
+  const session = await verifySessionToken(jar.get(SESSION_COOKIE)?.value);
+  if (!session) return null;
+  const access = await userAccess(session.id);
+  if (!access || !access.allowed) return null;
+  return { ...session, role: access.role, email: access.email ?? session.email };
+}
+
+export async function requireOwner(): Promise<SessionUser | null> {
+  const user = await getUser();
+  return user?.role === "owner" ? user : null;
 }
 
 export function clientIp(req: Request): string {

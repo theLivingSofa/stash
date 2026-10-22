@@ -3,9 +3,12 @@ import { db, must } from "../db";
 import type { CardRow, FeedFilter, FeedRepo, Tier } from "./chain";
 
 export class DbFeedRepo implements FeedRepo {
+  constructor(private userId: string) {}
+
   async candidates(sessionId: string, tier: Tier, filter: FeedFilter, limit: number): Promise<CardRow[]> {
     return (must(
       await db().rpc("feed_candidates", {
+        p_user: this.userId,
         p_session: sessionId,
         p_tier: tier,
         p_topic: filter.topic ?? null,
@@ -17,14 +20,14 @@ export class DbFeedRepo implements FeedRepo {
   }
 
   async affinity(): Promise<Map<string, number>> {
-    const rows = must(await db().rpc("topic_affinity", { p_half_life_days: 14 }), "topic_affinity") as
+    const rows = must(await db().rpc("topic_affinity", { p_user: this.userId, p_half_life_days: 14 }), "topic_affinity") as
       | { topic: string; score: number }[]
       | null;
     return new Map((rows ?? []).map((r) => [r.topic, Number(r.score)]));
   }
 
   async serve(sessionId: string, ids: string[], rememberedIds: string[]) {
-    must(await db().rpc("serve_ideas", { p_session: sessionId, p_ids: ids, p_remembered: rememberedIds }), "serve_ideas");
+    must(await db().rpc("serve_ideas", { p_user: this.userId, p_session: sessionId, p_ids: ids, p_remembered: rememberedIds }), "serve_ideas");
   }
 
   async resetSession(sessionId: string) {
@@ -32,11 +35,11 @@ export class DbFeedRepo implements FeedRepo {
   }
 
   async unseenCount(): Promise<number> {
-    return must(await db().rpc("unseen_count"), "unseen_count") as number;
+    return must(await db().rpc("unseen_count", { p_user: this.userId }), "unseen_count") as number;
   }
 }
 
-export async function getCards(ids: string[]): Promise<CardRow[]> {
+export async function getCards(userId: string, ids: string[]): Promise<CardRow[]> {
   if (ids.length === 0) return [];
-  return (must(await db().rpc("get_cards", { p_ids: ids }), "get_cards") ?? []) as CardRow[];
+  return (must(await db().rpc("get_cards", { p_user: userId, p_ids: ids }), "get_cards") ?? []) as CardRow[];
 }

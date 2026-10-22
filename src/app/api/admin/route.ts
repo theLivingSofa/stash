@@ -1,14 +1,15 @@
 import { db, must } from "@/lib/db";
-import { fail, isAuthed, json } from "@/lib/api";
+import { fail, json, requireOwner } from "@/lib/api";
 import { resolveProviders } from "@/lib/llm/config";
 import { providerKeys } from "@/lib/llm";
 import { BUFFER_TARGET } from "@/lib/feed/chain";
 
 export async function GET() {
-  if (!(await isAuthed())) return fail(401, "unauthorized");
+  const user = await requireOwner();
+  if (!user) return fail(403, "owner only");
   const since = new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10);
   const [stats, runs, usage, cooldowns, sources, missing, perSource] = await Promise.all([
-    db().rpc("buffer_stats"),
+    db().rpc("buffer_stats", { p_user: user.id }),
     db().from("ingest_runs").select("*").order("started_at", { ascending: false }).limit(15),
     db().from("llm_usage").select("day, provider, model, key_id, requests, failures").gte("day", since).order("day", { ascending: false }),
     db().from("llm_cooldowns").select("provider, model, key_id, until, level, last_error").gt("until", new Date().toISOString()),
