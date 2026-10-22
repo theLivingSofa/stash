@@ -1,16 +1,14 @@
 name: Read-aloud audio
 
-# Makes Neerja's audio for cards that don't have it yet. Each call to the app
-# does one ~40s round; this keeps calling until every card is done, the free
-# monthly budget is reached, or 9 minutes pass (the next run picks up from there).
-# Exits within seconds when there's nothing to make.
+# Manual backup for read-aloud audio. The regular timer is Supabase's pg_cron
+# (migration 20261024000009_audio_cron.sql), which calls the app every minute;
+# GitHub's schedule ran hours late. Run this by hand to push through a backlog:
+# it keeps calling until every card is done, the free budget is reached, or
+# 9 minutes pass.
 on:
-  schedule:
-    - cron: "*/10 * * * *"
   workflow_dispatch:
 
 permissions:
-  actions: write
   contents: read
 
 concurrency:
@@ -41,11 +39,3 @@ jobs:
             if [ "$stopped" = "busy" ]; then sleep 30; continue; fi
             if [ "$stopped" != "time" ] || [ "$remaining" = "0" ]; then break; fi
           done
-
-      # Public repos have scheduled workflows disabled after 60 days without
-      # commits. Re-enabling via the API resets that clock.
-      - name: Keep the schedule alive
-        if: github.event_name == 'schedule'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/audio.yml/enable" || true
