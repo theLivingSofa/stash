@@ -29,7 +29,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Everything except static assets and PWA files.
-    "/((?!_next/static|_next/image|favicon.ico|icons/|manifest.webmanifest|sw.js|robots.txt|offline.html).*)",
+    // Everything except static assets, PWA files and Vercel's analytics routes.
+    "/((?!_next/static|_next/image|_vercel|favicon.ico|icons/|manifest.webmanifest|sw.js|robots.txt|offline.html).*)",
   ],
 };

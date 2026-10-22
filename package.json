@@ -24,6 +24,7 @@
     "@mozilla/readability": "^0.6.0",
     "@supabase/supabase-js": "^2.118.0",
     "@tanstack/react-virtual": "^3.14.21",
+    "@vercel/analytics": "^2.0.1",
     "idb-keyval": "^6.3.0",
     "jose": "^6.2.13",
     "linkedom": "^0.18.14",
