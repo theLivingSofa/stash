@@ -23,7 +23,7 @@ export function Lightfield() {
     setLayers((l) => (l.on === "a" ? { a: l.a, b: topic, on: "b", last: topic } : { a: topic, b: l.b, on: "a", last: topic }));
   }
   return (
-    <div className="lightfield" aria-hidden>
+    <div className="lightfield" data-house={topic === null ? "true" : "false"} aria-hidden>
       <div className="light" data-on={layers.on === "a" ? "true" : "false"} style={{ ["--light" as string]: colorOf(layers.a) }} />
       <div className="light" data-on={layers.on === "b" ? "true" : "false"} style={{ ["--light" as string]: colorOf(layers.b) }} />
       <div className="grain" />

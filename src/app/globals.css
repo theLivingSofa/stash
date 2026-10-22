@@ -15,8 +15,9 @@
   /* Darkroom (default) */
   --ground: #14110f;
   --ground-lift: #1d1915;
-  --frame-a: rgba(255, 246, 232, 0.17);
-  --frame-b: rgba(255, 246, 232, 0.06);
+  /* Smoked glass: dark enough that light text stays readable over any glow. */
+  --frame-a: rgba(40, 33, 27, 0.6);
+  --frame-b: rgba(20, 16, 13, 0.74);
   --frame-edge: rgba(255, 246, 232, 0.26);
   --frame-hi: rgba(255, 255, 255, 0.42);
   --frame-shadow: 0 28px 56px -18px rgba(0, 0, 0, 0.7);
@@ -180,6 +181,12 @@ a {
 }
 .light[data-on="true"] {
   opacity: 1;
+}
+/* Off the feed (Explore, Library, Settings) the room keeps a softer house light,
+   so text sitting on the page never lands on a bright patch. */
+:root:not([data-theme="light"]) .lightfield[data-house="true"] {
+  --glow-alpha: 0.32;
+  --glow-alpha-2: 0.14;
 }
 @keyframes drift {
   from {
