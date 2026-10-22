@@ -60,3 +60,14 @@ describe("parseIdeaBatch", () => {
     expect(wordCount("  one two   three ")).toBe(3);
   });
 });
+
+describe("extractJson repairs small model slips", () => {
+  it("fixes a missing colon after a property name", async () => {
+    const { extractJson } = await import("@/lib/schemas");
+    expect(extractJson('{"ideas": [{"title" "A", "text": "B"}]}')).toEqual({ ideas: [{ title: "A", text: "B" }] });
+  });
+  it("keeps the complete items of a reply that was cut off, never a half item", async () => {
+    const { extractJson } = await import("@/lib/schemas");
+    expect(extractJson('Here you go: {"ideas": [{"title": "A", "text": "B"}, {"title": "C", "te')).toEqual({ ideas: [{ title: "A", text: "B" }] });
+  });
+});

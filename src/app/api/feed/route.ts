@@ -5,7 +5,7 @@ import { buildPage, type FeedFilter } from "@/lib/feed/chain";
 import { DbFeedRepo } from "@/lib/feed/repo";
 import { runIngest } from "@/lib/ingest/run";
 import { FeedQuery } from "@/lib/schemas";
-import { ensureQuestions } from "@/lib/recall";
+import { ensureQuestions, prepareTrivia } from "@/lib/recall";
 import { isTopic } from "@/lib/topics";
 import { queryEmbedding } from "@/lib/search";
 import type { FeedPage } from "@/lib/types";
@@ -50,6 +50,8 @@ export async function GET(req: NextRequest) {
   // A recall card without its question yet: write it for next time.
   const noQuestion = result.cards.filter((c) => c.recall && !c.recall.question).map((c) => c.id);
   if (noQuestion.length) after(() => ensureQuestions(noQuestion).catch(() => 0));
+  // Keep a few trivia questions written ahead for the next pages.
+  if (!filter.topic && !filter.concept) after(() => prepareTrivia(user.id).catch(() => 0));
 
   const body: FeedPage = {
     cards: result.cards,

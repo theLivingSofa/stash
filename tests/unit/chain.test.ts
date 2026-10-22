@@ -133,7 +133,7 @@ describe("spaced recall in the feed", () => {
     expect(page.cards).toHaveLength(21);
     expect(page.cards[3].id).toBe("kept1");
     expect(page.cards[3].kind).toBe("recall");
-    expect(page.cards[3].recall).toEqual({ question: "Why does it matter?", box: 1 });
+    expect(page.cards[3].recall).toEqual({ question: "Why does it matter?", box: 1, mode: "review" });
     expect(page.cards.filter((c) => c.kind === "recall")).toHaveLength(1);
   });
 
@@ -145,5 +145,34 @@ describe("spaced recall in the feed", () => {
     expect(second.cards.some((c) => c.kind === "recall")).toBe(false);
     const topical = await buildPage(new RecallRepo(many(30), [kept]), { sessionId: "s2", filter: { topic: "science" } });
     expect(topical.cards.some((c) => c.kind === "recall")).toBe(false);
+  });
+});
+
+describe("trivia in the feed", () => {
+  class TriviaRepo extends FakeRepo {
+    constructor(rows: CardRow[], public pick: CardRow | null) {
+      super(rows);
+    }
+    async trivia() {
+      return this.pick ? { row: this.pick, box: 0, question: "What did it claim?" } : null;
+    }
+  }
+  const read = row("read1", "art", { seen_at: "2026-10-20T00:00:00Z" });
+
+  it("places one ready trivia between the 12th and 15th card", async () => {
+    for (const seed of [1, 2, 3, 4, 5]) {
+      let x = seed;
+      const rng = () => ((x = (x * 9301 + 49297) % 233280) / 233280);
+      const page = await buildPage(new TriviaRepo(many(30), read), { sessionId: `s${seed}`, filter: {}, rng });
+      const at = page.cards.findIndex((c) => c.recall?.mode === "trivia");
+      expect(at).toBeGreaterThanOrEqual(12);
+      expect(at).toBeLessThanOrEqual(15);
+      expect(page.cards[at].recall?.question).toBe("What did it claim?");
+    }
+  });
+
+  it("skips trivia when no question is ready, and on short pages", async () => {
+    expect((await buildPage(new TriviaRepo(many(30), null), { sessionId: "a", filter: {} })).cards.some((c) => c.recall)).toBe(false);
+    expect((await buildPage(new TriviaRepo(many(8), read), { sessionId: "b", filter: {} })).cards.some((c) => c.recall)).toBe(false);
   });
 });

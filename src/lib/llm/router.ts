@@ -204,7 +204,9 @@ export class LlmRouter {
             attempts.push({ ...slot, outcome: "skipped", detail: "deadline" });
             throw new AllProvidersExhaustedError(attempts);
           }
-          const timeoutMs = Math.min(req.timeoutMs ?? 45_000, remaining - 1_000);
+          // One slow model must not use up the whole budget: leave the next
+          // provider at least ~40% of the time that's left.
+          const timeoutMs = Math.min(req.timeoutMs ?? 45_000, remaining - 1_000, Math.max(15_000, Math.floor(remaining * 0.6)));
           const started = this.now();
 
           let text: string;

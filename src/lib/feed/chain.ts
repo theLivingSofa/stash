@@ -44,11 +44,15 @@ export interface RecallRow {
 
 /** Where a due recall card goes on a page (0-based): after a few fresh ideas. */
 export const RECALL_POSITION = 3;
+/** Trivia lands somewhere between the 12th and 15th card of a page. */
+export const TRIVIA_RANGE = [12, 15] as const;
 
 export interface FeedRepo {
   candidates(sessionId: string, tier: Tier, filter: FeedFilter, limit: number): Promise<CardRow[]>;
   /** Saved/liked ideas due for review, not yet dealt this session. */
   dueRecall?(sessionId: string, limit: number): Promise<RecallRow[]>;
+  /** One idea read earlier (not kept) whose trivia question is ready. */
+  trivia?(sessionId: string): Promise<RecallRow | null>;
   affinity(): Promise<Map<string, number>>;
   serve(sessionId: string, ids: string[], rememberedIds: string[]): Promise<void>;
   resetSession(sessionId: string): Promise<void>;
@@ -152,8 +156,20 @@ export async function buildPage(
     const [due] = await repo.dueRecall(opts.sessionId, 1);
     if (due && !taken.has(due.row.id)) {
       const card = toCard(due.row, "recall");
-      card.recall = { question: due.question, box: due.box };
+      card.recall = { question: due.question, box: due.box, mode: "review" };
       cards.splice(Math.min(RECALL_POSITION, cards.length), 0, card);
+    }
+  }
+
+  // Trivia about something read earlier, once its question is written.
+  if (cards.length >= TRIVIA_RANGE[0] && !hasFilter(opts.filter) && repo.trivia) {
+    const t = await repo.trivia(opts.sessionId);
+    if (t && t.question && !cards.some((c) => c.id === t.row.id)) {
+      const card = toCard(t.row, "recall");
+      card.recall = { question: t.question, box: 0, mode: "trivia" };
+      const [lo, hi] = TRIVIA_RANGE;
+      const at = Math.min(cards.length, lo + Math.floor(rng() * (hi - lo + 1)));
+      cards.splice(at, 0, card);
     }
   }
 

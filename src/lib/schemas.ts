@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { jsonrepair } from "jsonrepair";
 
 export const wordCount = (s: string) => (s.trim().match(/\S+/g) ?? []).length;
 
@@ -64,7 +65,14 @@ export function extractJson(raw: string): unknown {
   const end = s.lastIndexOf(close);
   if (end <= start) throw new Error("unterminated JSON in model output");
   const slice = s.slice(start, end + 1).replace(/,\s*([}\]])/g, "$1"); // trailing commas
-  return JSON.parse(slice);
+  try {
+    return JSON.parse(slice);
+  } catch {
+    // Small model slips (a missing colon or comma, stray quotes) are fixed
+    // locally instead of spending another LLM call. The slice ends at the last
+    // complete object, so a reply cut off mid-idea drops that idea, never keeps half of it.
+    return JSON.parse(jsonrepair(slice));
+  }
 }
 
 export interface ParsedBatch {

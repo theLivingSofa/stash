@@ -204,10 +204,11 @@ function Front({
       const res = await fetch("/api/recall", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ id: card.id, ok }),
+        body: JSON.stringify({ id: card.id, ok, mode: card.recall?.mode ?? "review" }),
       });
       const { days } = (await res.json()) as { days: number | null };
-      if (days) toast(ok ? `Nice. Back in ${days} ${days === 1 ? "day" : "days"}.` : "No problem. It'll come back tomorrow.");
+      if (card.recall?.mode === "trivia") toast(ok ? "Nice, you kept that one." : "Worth keeping? Tap the bookmark to save it.");
+      else if (days) toast(ok ? `Nice. Back in ${days} ${days === 1 ? "day" : "days"}.` : "No problem. It'll come back tomorrow.");
     } catch {
       /* offline: the card simply stays due */
     }
@@ -249,7 +250,9 @@ function Front({
         >
           {asking ? (
             <>
-              <p className="label mb-4 text-[13.5px] text-accent">Remember this one?</p>
+              <p className="label mb-4 text-[13.5px] text-accent">
+                {card.recall?.mode === "trivia" ? "From something you read" : "Remember this one?"}
+              </p>
               <p className="idea-text" data-len="short">
                 {question}
               </p>
@@ -276,7 +279,7 @@ function Front({
       </div>
       {recall === "ask" ? (
         <footer className="flex items-center justify-between gap-2 pt-2 pl-2">
-          <span className="label text-[13px] text-muted">Review</span>
+          <span className="label text-[13px] text-muted">{card.recall?.mode === "trivia" ? "Quick quiz" : "Review"}</span>
           <button type="button" onClick={() => setRecall("judge")} className="pill turn shrink-0">
             Show answer
           </button>

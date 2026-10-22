@@ -30,6 +30,7 @@
     "aws4fetch": "^1.0.20",
     "idb-keyval": "^6.3.0",
     "jose": "^6.2.13",
+    "jsonrepair": "^3.13.1",
     "linkedom": "^0.18.14",
     "next": "16.4.2",
     "react": "19.3.0",

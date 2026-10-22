@@ -1,7 +1,7 @@
 import "server-only";
 import { db, must } from "../db";
 import { audioReady } from "../tts/backfill";
-import { dueRecall } from "../recall";
+import { dueRecall, pickTrivia } from "../recall";
 import type { CardRow, FeedFilter, FeedRepo, RecallRow, Tier } from "./chain";
 
 const INTEREST_BOOST = 3;
@@ -36,6 +36,13 @@ export class DbFeedRepo implements FeedRepo {
       const row = byId.get(d.idea_id);
       return row ? [{ row, box: d.box, question: d.question }] : [];
     });
+  }
+
+  async trivia(sessionId: string): Promise<RecallRow | null> {
+    const t = await pickTrivia(this.userId, sessionId).catch(() => null);
+    if (!t) return null;
+    const [row] = await getCards(this.userId, [t.idea_id]);
+    return row ? { row, box: 0, question: t.question } : null;
   }
 
   async affinity(): Promise<Map<string, number>> {

@@ -68,3 +68,23 @@ export async function ensureQuestions(ideaIds: string[], budgetMs = 20_000): Pro
   }
   return made;
 }
+
+/** A random trivia (read, not kept) whose question is ready, or null. */
+export async function pickTrivia(userId: string, sessionId: string): Promise<{ idea_id: string; question: string } | null> {
+  const { data, error } = await db().rpc("trivia_pick", { p_user: userId, p_session: sessionId });
+  if (error) return null;
+  const row = (data as { idea_id: string; question: string }[] | null)?.[0];
+  return row ?? null;
+}
+
+/** Keep a few trivia questions written ahead, so one is ready when it's due. */
+export async function prepareTrivia(userId: string, keep = 3, batch = 2): Promise<number> {
+  const { data: ready } = await db().rpc("trivia_ready_count", { p_user: userId });
+  if (Number(ready ?? 0) >= keep) return 0;
+  const { data: ids } = await db().rpc("trivia_to_prepare", { p_user: userId, p_n: batch });
+  return ensureQuestions(((ids as string[] | null) ?? []).filter(Boolean), 25_000);
+}
+
+export async function logTrivia(userId: string, ideaId: string, ok: boolean) {
+  must(await db().from("trivia_log").insert({ user_id: userId, idea_id: ideaId, ok }), "trivia log");
+}

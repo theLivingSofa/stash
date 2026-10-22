@@ -63,6 +63,7 @@ export function People() {
   return (
     <section id="people" className={`${card} mt-3 scroll-mt-4`}>
       <h2 className="mb-3 text-[15px] font-medium">People</h2>
+      <AccessSwitch />
 
       <h3 className="mb-2 text-[13px] text-muted">Asking to join ({pending.length})</h3>
       {pending.length ? (
@@ -137,5 +138,60 @@ export function People() {
         ))}
       </ul>
     </section>
+  );
+}
+
+/** Who can sign in with Google: approved people only, or anyone. */
+function AccessSwitch() {
+  const [mode, setMode] = useState<"invite" | "open" | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/admin/access", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((x: { mode: "invite" | "open" } | null) => x && setMode(x.mode))
+      .catch(() => {});
+  }, []);
+
+  async function choose(next: "invite" | "open") {
+    if (next === mode || saving) return;
+    setSaving(true);
+    try {
+      const r = await fetch("/api/admin/access", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: next }),
+      });
+      if (!r.ok) throw new Error();
+      setMode(next);
+      toast(next === "open" ? "Stash is open: anyone with Google can sign in." : "Back to approved people only.");
+    } catch {
+      toast("Couldn't change who can sign in. Try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!mode) return null;
+  const seg = (on: boolean) => `label rounded-full px-3 py-1.5 text-[13.5px] ${on ? "bg-accent text-accent-ink" : "text-muted"}`;
+  return (
+    <div className="mb-4 border-b border-line pb-4">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[14px]">Who can sign in</span>
+        <div className="flex rounded-full bg-surface-2 p-1" role="group" aria-label="Who can sign in">
+          <button type="button" className={seg(mode === "invite")} aria-pressed={mode === "invite"} disabled={saving} onClick={() => choose("invite")}>
+            Approved only
+          </button>
+          <button type="button" className={seg(mode === "open")} aria-pressed={mode === "open"} disabled={saving} onClick={() => choose("open")}>
+            Anyone
+          </button>
+        </div>
+      </div>
+      <p className="mt-2 text-[12px] leading-relaxed text-muted">
+        {mode === "open"
+          ? "Anyone with a Google account can sign in and is added to the approved list below. Switching back keeps them; remove anyone you don't want. More readers use more of the free AI and voice allowances."
+          : "Only the emails approved below can sign in. Others can request access, and you get an email."}
+      </p>
+    </div>
   );
 }

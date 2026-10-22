@@ -5,12 +5,30 @@ import type { Role, SessionUser } from "./session";
 
 export const ownerEmail = () => (process.env.OWNER_EMAIL ?? "").trim().toLowerCase();
 
+export type AccessMode = "invite" | "open";
+
+/** "invite": approved emails only (default). "open": anyone with a verified Google account. */
+export async function accessMode(): Promise<AccessMode> {
+  const { data } = await db().from("app_settings").select("value").eq("key", "access").maybeSingle();
+  return data?.value === "open" ? "open" : "invite";
+}
+
+export async function setAccessMode(mode: AccessMode) {
+  must(await db().from("app_settings").upsert({ key: "access", value: mode, updated_at: new Date().toISOString() }), "set access mode");
+}
+
 /** Decide whether a verified Google email may use Stash. */
 export async function accessFor(email: string): Promise<Role | null> {
   const e = email.trim().toLowerCase();
   if (ownerEmail() && e === ownerEmail()) return "owner";
   const { data } = await db().from("allowed_emails").select("email").eq("email", e).maybeSingle();
-  return data ? "member" : null;
+  if (data) return "member";
+  if ((await accessMode()) === "open") {
+    // Open sign-up: add them to the list, so closing it again keeps them in.
+    await db().from("allowed_emails").upsert({ email: e });
+    return "member";
+  }
+  return null;
 }
 
 /** Create or update the user row for a Google identity. The owner row already exists. */

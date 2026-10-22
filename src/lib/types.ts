@@ -30,8 +30,8 @@ export interface Card {
   reaction: -1 | 0 | 1;
   /** Set on the first card shown after a filter ran dry and the feed widened. */
   beyond?: string;
-  /** A saved/liked idea coming back for review (spaced recall). */
-  recall?: { question: string | null; box: number };
+  /** A question card: a saved/liked idea due for review, or trivia about one read earlier. */
+  recall?: { question: string | null; box: number; mode: "review" | "trivia" };
 }
 
 export interface FeedPage {
