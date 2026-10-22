@@ -113,3 +113,37 @@ describe("buildPage (no-repeat endless feed)", () => {
     expect(page.needIngest).toBe(true);
   });
 });
+
+describe("spaced recall in the feed", () => {
+  class RecallRepo extends FakeRepo {
+    constructor(rows: CardRow[], public due: CardRow[]) {
+      super(rows);
+    }
+    async dueRecall(s: string, limit: number) {
+      return this.due
+        .filter((r) => !(this.served.get(s)?.has(r.id) ?? false))
+        .slice(0, limit)
+        .map((r) => ({ row: r, box: 1, question: "Why does it matter?" }));
+    }
+  }
+  const kept = row("kept1", "history", { seen_at: "2026-10-20T00:00:00Z", saved_at: "2026-10-20T00:00:00Z" });
+
+  it("puts one due review a few cards into the main feed", async () => {
+    const page = await buildPage(new RecallRepo(many(30), [kept]), { sessionId: "s1", filter: {} });
+    expect(page.cards).toHaveLength(21);
+    expect(page.cards[3].id).toBe("kept1");
+    expect(page.cards[3].kind).toBe("recall");
+    expect(page.cards[3].recall).toEqual({ question: "Why does it matter?", box: 1 });
+    expect(page.cards.filter((c) => c.kind === "recall")).toHaveLength(1);
+  });
+
+  it("never repeats a review within the session, and stays out of topic feeds", async () => {
+    const repo = new RecallRepo(many(60), [kept]);
+    const first = await buildPage(repo, { sessionId: "s1", filter: {} });
+    const second = await buildPage(repo, { sessionId: "s1", filter: {} });
+    expect(first.cards.some((c) => c.kind === "recall")).toBe(true);
+    expect(second.cards.some((c) => c.kind === "recall")).toBe(false);
+    const topical = await buildPage(new RecallRepo(many(30), [kept]), { sessionId: "s2", filter: { topic: "science" } });
+    expect(topical.cards.some((c) => c.kind === "recall")).toBe(false);
+  });
+});

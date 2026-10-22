@@ -15,7 +15,7 @@ export default async function globalSetup() {
   loadEnv({ path: ".env.local", quiet: true });
   const sb = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!, { auth: { persistSession: false } });
   const email = `e2e-${Date.now()}@example.invalid`;
-  const { data, error } = await sb.from("users").insert({ email, name: "E2E test reader", role: "member" }).select("id").single();
+  const { data, error } = await sb.from("users").insert({ email, name: "E2E test reader", role: "member", onboarded_at: new Date().toISOString() }).select("id").single();
   if (error) throw error;
   await sb.from("allowed_emails").insert({ email });
   const token = await createSessionToken({ id: data.id, email, role: "member", via: "google" });

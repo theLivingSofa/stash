@@ -36,8 +36,19 @@ export interface CardRow {
   audio?: boolean;
 }
 
+export interface RecallRow {
+  row: CardRow;
+  box: number;
+  question: string | null;
+}
+
+/** Where a due recall card goes on a page (0-based): after a few fresh ideas. */
+export const RECALL_POSITION = 3;
+
 export interface FeedRepo {
   candidates(sessionId: string, tier: Tier, filter: FeedFilter, limit: number): Promise<CardRow[]>;
+  /** Saved/liked ideas due for review, not yet dealt this session. */
+  dueRecall?(sessionId: string, limit: number): Promise<RecallRow[]>;
   affinity(): Promise<Map<string, number>>;
   serve(sessionId: string, ids: string[], rememberedIds: string[]): Promise<void>;
   resetSession(sessionId: string): Promise<void>;
@@ -133,6 +144,16 @@ export async function buildPage(
     if (cards.length > before) {
       widenedFrom = filterLabel(opts.filter);
       cards[before].beyond = widenedFrom;
+    }
+  }
+
+  // Spaced recall: one due review per page, in the main feed only.
+  if (cards.length > 0 && !hasFilter(opts.filter) && repo.dueRecall) {
+    const [due] = await repo.dueRecall(opts.sessionId, 1);
+    if (due && !taken.has(due.row.id)) {
+      const card = toCard(due.row, "recall");
+      card.recall = { question: due.question, box: due.box };
+      cards.splice(Math.min(RECALL_POSITION, cards.length), 0, card);
     }
   }
 

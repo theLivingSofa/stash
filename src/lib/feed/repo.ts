@@ -1,7 +1,10 @@
 import "server-only";
 import { db, must } from "../db";
 import { audioReady } from "../tts/backfill";
-import type { CardRow, FeedFilter, FeedRepo, Tier } from "./chain";
+import { dueRecall } from "../recall";
+import type { CardRow, FeedFilter, FeedRepo, RecallRow, Tier } from "./chain";
+
+const INTEREST_BOOST = 3;
 
 export class DbFeedRepo implements FeedRepo {
   constructor(private userId: string) {}
@@ -24,11 +27,28 @@ export class DbFeedRepo implements FeedRepo {
     return rows;
   }
 
+  async dueRecall(sessionId: string, limit: number): Promise<RecallRow[]> {
+    const due = await dueRecall(this.userId, sessionId, limit).catch(() => []);
+    if (due.length === 0) return [];
+    const rows = await getCards(this.userId, due.map((d) => d.idea_id));
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    return due.flatMap((d) => {
+      const row = byId.get(d.idea_id);
+      return row ? [{ row, box: d.box, question: d.question }] : [];
+    });
+  }
+
   async affinity(): Promise<Map<string, number>> {
-    const rows = must(await db().rpc("topic_affinity", { p_user: this.userId, p_half_life_days: 14 }), "topic_affinity") as
-      | { topic: string; score: number }[]
-      | null;
-    return new Map((rows ?? []).map((r) => [r.topic, Number(r.score)]));
+    const [{ data: rows, error }, { data: me }] = await Promise.all([
+      db().rpc("topic_affinity", { p_user: this.userId, p_half_life_days: 14 }),
+      db().from("users").select("interests").eq("id", this.userId).maybeSingle(),
+    ]);
+    if (error) throw new Error(`topic_affinity: ${error.message}`);
+    const map = new Map(((rows ?? []) as { topic: string; score: number }[]).map((r) => [r.topic, Number(r.score)]));
+    // Topics picked on first sign-in: a head start, worth about one save each,
+    // that real reading signals soon outweigh.
+    for (const t of ((me?.interests as string[] | null) ?? [])) map.set(t, (map.get(t) ?? 0) + INTEREST_BOOST);
+    return map;
   }
 
   async serve(sessionId: string, ids: string[], rememberedIds: string[]) {

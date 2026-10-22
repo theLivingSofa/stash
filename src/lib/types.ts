@@ -11,8 +11,8 @@ export interface IdeaBack {
   confidence: Confidence;
 }
 
-/** "new" in the feed; "seen"/"remember" when shown from the Library. */
-export type CardKind = "new" | "seen" | "remember";
+/** "new" in the feed; "seen"/"remember" when shown from the Library; "recall" = a due review. */
+export type CardKind = "new" | "seen" | "remember" | "recall";
 
 export interface Card {
   id: string;
@@ -30,6 +30,8 @@ export interface Card {
   reaction: -1 | 0 | 1;
   /** Set on the first card shown after a filter ran dry and the feed widened. */
   beyond?: string;
+  /** A saved/liked idea coming back for review (spaced recall). */
+  recall?: { question: string | null; box: number };
 }
 
 export interface FeedPage {

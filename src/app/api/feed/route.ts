@@ -5,6 +5,7 @@ import { buildPage, type FeedFilter } from "@/lib/feed/chain";
 import { DbFeedRepo } from "@/lib/feed/repo";
 import { runIngest } from "@/lib/ingest/run";
 import { FeedQuery } from "@/lib/schemas";
+import { ensureQuestions } from "@/lib/recall";
 import { isTopic } from "@/lib/topics";
 import { queryEmbedding } from "@/lib/search";
 import type { FeedPage } from "@/lib/types";
@@ -45,6 +46,10 @@ export async function GET(req: NextRequest) {
       runIngest({ trigger: "feed", budgetMs: 45_000, focusConcept, focusTopic }).catch((e) => console.error("[feed] background ingest", e)),
     );
   }
+
+  // A recall card without its question yet: write it for next time.
+  const noQuestion = result.cards.filter((c) => c.recall && !c.recall.question).map((c) => c.id);
+  if (noQuestion.length) after(() => ensureQuestions(noQuestion).catch(() => 0));
 
   const body: FeedPage = {
     cards: result.cards,

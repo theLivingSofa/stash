@@ -1,4 +1,5 @@
-import type { NextRequest } from "next/server";
+import { after, type NextRequest } from "next/server";
+import { ensureQuestions } from "@/lib/recall";
 import { db } from "@/lib/db";
 import { fail, getUser, json } from "@/lib/api";
 import { EventsInput } from "@/lib/schemas";
@@ -14,5 +15,8 @@ export async function POST(req: NextRequest) {
     if (error) errors.push(error.message);
   }
   if (errors.length === parsed.data.events.length) return fail(500, errors[0]);
+  // Saved/liked ideas get a recall question, written once, in the background.
+  const kept = parsed.data.events.filter((e) => e.kind === "save" || e.kind === "like").map((e) => e.id);
+  if (kept.length) after(() => ensureQuestions(kept).catch(() => 0));
   return json({ ok: true, applied: parsed.data.events.length - errors.length });
 }

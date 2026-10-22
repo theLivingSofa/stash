@@ -7,6 +7,7 @@ import { useSettings } from "@/lib/client/settings";
 import { activeVoiceLabel, canSpeak, rankedVoices, speak, stopSpeaking } from "@/lib/client/speak";
 import { naturalStatus, naturalVoiceFor, playNatural, subscribeNatural } from "@/lib/client/natural";
 import { SAMPLE_TEXT } from "@/lib/tts/voices";
+import { topicLabel } from "@/lib/topics";
 import { toast } from "@/components/Toast";
 import { clearDeviceData } from "@/lib/client/cache";
 
@@ -53,6 +54,18 @@ export default function SettingsPage() {
       <h1 className="sr-only">Settings</h1>
       <div className="glass rounded-[26px] px-4 pb-1" style={{ ["--light" as string]: "var(--accent)" }}>
       <Account me={me} />
+
+      <Link href="/welcome?edit=1" className={`${row} text-[15px]`}>
+        <span className="min-w-0">
+          <span className="block">Your topics</span>
+          <span className="block truncate text-[13px] text-muted">
+            {me?.interests?.length ? me.interests.map(topicLabel).join(", ") : "Pick what you're curious about"}
+          </span>
+        </span>
+        <span className="text-muted" aria-hidden>
+          ›
+        </span>
+      </Link>
 
       <div className={row}>
         <span>
@@ -179,6 +192,7 @@ interface Me {
   avatar: string | null;
   role: "owner" | "member";
   via: "google" | "passcode";
+  interests?: string[];
 }
 
 function useMe(): Me | null {

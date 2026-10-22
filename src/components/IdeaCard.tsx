@@ -4,6 +4,7 @@ import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 
 import type { Card, IdeaBack } from "@/lib/types";
 import { topicLabel } from "@/lib/topics";
 import { CardActions } from "./CardActions";
+import { toast } from "./Toast";
 import { IconBack, IconExternal, IconTurn } from "./Icons";
 
 const FLIP_MS = 350;
@@ -192,6 +193,25 @@ function Front({
 }) {
   const bodyRef = useRef<HTMLDivElement>(null);
   const [shrink, setShrink] = useState(1);
+  // Spaced recall: the question first, the idea on "Show answer", then a verdict.
+  const [recall, setRecall] = useState<"ask" | "judge" | "done" | null>(card.recall ? "ask" : null);
+  const asking = recall === "ask";
+
+  const answer = async (ok: boolean) => {
+    setRecall("done");
+    navigator.vibrate?.(8);
+    try {
+      const res = await fetch("/api/recall", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id: card.id, ok }),
+      });
+      const { days } = (await res.json()) as { days: number | null };
+      if (days) toast(ok ? `Nice. Back in ${days} ${days === 1 ? "day" : "days"}.` : "No problem. It'll come back tomorrow.");
+    } catch {
+      /* offline: the card simply stays due */
+    }
+  };
 
   // Keep the whole idea in the window: step the type down if it would overflow.
   useLayoutEffect(() => {
@@ -211,7 +231,10 @@ function Front({
     const ro = new ResizeObserver(fit);
     ro.observe(body);
     return () => ro.disconnect();
-  }, [card.text, card.title, card.why]);
+  }, [card.text, card.title, card.why, asking]);
+
+  const question =
+    card.recall?.question ?? (card.title ? `What was the idea behind “${card.title}”?` : "Do you remember this idea?");
 
   return (
     <>
@@ -224,22 +247,50 @@ function Front({
           className="flex h-full flex-col justify-center overflow-hidden px-6 py-8"
           style={{ ["--fit" as string]: shrink }}
         >
-          {card.beyond ? (
+          {asking ? (
+            <>
+              <p className="label mb-4 text-[13.5px] text-accent">Remember this one?</p>
+              <p className="idea-text" data-len="short">
+                {question}
+              </p>
+              <p className="mt-5 text-[14.5px] leading-relaxed text-muted">Think of your answer, then check it.</p>
+            </>
+          ) : null}
+          {asking ? null : card.beyond ? (
             <p className="label mb-4 text-[13.5px] leading-snug text-accent">
               That&apos;s everything new on &ldquo;{card.beyond}&rdquo;. More from across your feed.
             </p>
           ) : null}
-          {card.title ? <h2 className="idea-title mb-3">{card.title}</h2> : null}
-          <p className="idea-text" data-len={lengthBucket(card.text)}>
-            {card.text}
-          </p>
-          {card.why ? (
+          {asking ? null : card.title ? <h2 className="idea-title mb-3">{card.title}</h2> : null}
+          {asking ? null : (
+            <p className="idea-text" data-len={lengthBucket(card.text)}>
+              {card.text}
+            </p>
+          )}
+          {!asking && card.why ? (
             <p className="mt-5 leading-relaxed text-muted" style={{ fontSize: `calc(14.5px * max(var(--fit, 1), 0.86))` }}>
               {card.why}
             </p>
           ) : null}
         </div>
       </div>
+      {recall === "ask" ? (
+        <footer className="flex items-center justify-between gap-2 pt-2 pl-2">
+          <span className="label text-[13px] text-muted">Review</span>
+          <button type="button" onClick={() => setRecall("judge")} className="pill turn shrink-0">
+            Show answer
+          </button>
+        </footer>
+      ) : recall === "judge" ? (
+        <footer className="flex items-center justify-end gap-2 pt-2">
+          <button type="button" onClick={() => answer(false)} className="pill chrome shrink-0 text-[14px]">
+            Not yet
+          </button>
+          <button type="button" onClick={() => answer(true)} className="pill turn shrink-0">
+            Got it
+          </button>
+        </footer>
+      ) : (
       <footer className="flex items-center justify-between gap-2 pt-2 pl-0.5">
         <CardActions card={card} onUpdate={onUpdate} includeBack={false} />
         <button
@@ -253,6 +304,7 @@ function Front({
           Turn over
         </button>
       </footer>
+      )}
     </>
   );
 }
