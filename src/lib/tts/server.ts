@@ -55,11 +55,14 @@ export async function storedAudio(c: TtsConfig, key: string): Promise<boolean> {
 }
 
 export async function storeAudio(c: TtsConfig, key: string, audio: ArrayBuffer): Promise<void> {
-  const res = await c.s3.fetch(objectUrl(c, key), {
+  // Sign, then send the bytes ourselves: passing the signed Request to fetch
+  // streams the body without a Content-Length, which B2 rejects (411).
+  const signed = await c.s3.sign(objectUrl(c, key), {
     method: "PUT",
     body: audio,
     headers: { "Content-Type": "audio/mpeg", "Cache-Control": "private, max-age=31536000, immutable" },
   });
+  const res = await fetch(signed.url, { method: "PUT", headers: signed.headers, body: new Uint8Array(audio) });
   if (!res.ok) throw new Error(`B2 upload ${res.status}: ${(await res.text()).slice(0, 200)}`);
 }
 
