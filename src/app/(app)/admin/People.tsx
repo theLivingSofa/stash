@@ -9,6 +9,8 @@ interface Counts {
   allowed: number;
   pending: number;
   readers: number;
+  /** Readers who can still sign in (only on the full People page). */
+  active?: number;
 }
 interface Request {
   email: string;
@@ -28,6 +30,8 @@ interface Reader {
   last_active_at: string | null;
   seen: number;
   saved: number;
+  /** Can sign in now: the owner, or on the approved list. */
+  access: boolean;
 }
 interface PeopleData {
   counts: Counts;
@@ -98,6 +102,7 @@ export function PeopleSummary() {
 /** The People page: requests, approved emails (search + sort), readers. */
 export function PeopleManager({ initialTab = "approved" }: { initialTab?: "approved" | "requests" | "readers" }) {
   const [tab, setTab] = useState(initialTab);
+  const [readersView, setReadersView] = useState<"access" | "all">("access");
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<Sort>("new");
   const [d, setD] = useState<PeopleData | null>(null);
@@ -174,7 +179,7 @@ export function PeopleManager({ initialTab = "approved" }: { initialTab?: "appro
       <div className="mb-3 flex flex-wrap gap-2" role="tablist" aria-label="People">
         {tabBtn("approved", "Approved", counts?.allowed)}
         {tabBtn("requests", "Requests", counts?.pending)}
-        {tabBtn("readers", "Readers", counts?.readers)}
+        {tabBtn("readers", "Readers", counts?.active ?? counts?.readers)}
       </div>
 
       {tab === "approved" ? (
@@ -291,8 +296,35 @@ export function PeopleManager({ initialTab = "approved" }: { initialTab?: "appro
 
       {tab === "readers" ? (
         <section className="glass rounded-[22px] p-4">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <div className="flex rounded-full bg-surface-2 p-1" role="group" aria-label="Which readers">
+              {(
+                [
+                  ["access", "Has access", counts?.active],
+                  ["all", "Everyone", counts?.readers],
+                ] as const
+              ).map(([k, label, n]) => (
+                <button
+                  key={k}
+                  type="button"
+                  aria-pressed={readersView === k}
+                  onClick={() => setReadersView(k)}
+                  className={`label rounded-full px-3 py-1.5 text-[13.5px] ${readersView === k ? "bg-accent text-accent-ink" : "text-muted"}`}
+                >
+                  {label}
+                  {n != null ? <span className="tabular ml-1 opacity-75">{n}</span> : null}
+                </button>
+              ))}
+            </div>
+          </div>
+          <p className="mb-1 text-[12px] leading-relaxed text-muted">
+            {readersView === "access"
+              ? "People who can sign in right now: you and everyone on the approved list."
+              : "Everyone who has ever signed in. “No access” means they joined while Stash was open, or were approved, and you've since removed them."}
+          </p>
           <ul className="divide-y divide-line">
             {[...(d?.users ?? [])]
+              .filter((u) => readersView === "all" || u.access)
               .sort((a, b) => (b.last_active_at ?? "").localeCompare(a.last_active_at ?? ""))
               .map((u) => (
                 <li key={u.id} className="flex items-center justify-between gap-3 py-2.5">
@@ -302,6 +334,9 @@ export function PeopleManager({ initialTab = "approved" }: { initialTab?: "appro
                       {u.role === "owner" ? <span className="text-muted"> (you)</span> : null}
                     </span>
                     {u.name && u.email ? <span className="block truncate text-[12px] text-muted">{u.email}</span> : null}
+                    {!u.access ? (
+                      <span className="label mt-0.5 inline-block rounded-full border border-danger/50 px-2 py-0.5 text-[11px] text-danger">No access</span>
+                    ) : null}
                   </span>
                   <span className="shrink-0 text-right text-[12px] text-muted">
                     {u.seen} read · {u.saved} saved

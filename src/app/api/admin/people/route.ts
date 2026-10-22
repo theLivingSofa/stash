@@ -43,11 +43,22 @@ export async function GET(req: NextRequest) {
     db().rpc("user_stats"),
   ]);
   const total = allowed.count ?? 0;
+
+  // Does each reader still have access (owner, or on the approved list)?
+  const readers = (users.data ?? []) as { email: string | null; role: string }[];
+  const emails = [...new Set(readers.map((u) => u.email?.toLowerCase()).filter((e): e is string => !!e))];
+  const approved = new Set<string>();
+  for (let i = 0; i < emails.length; i += 200) {
+    const { data } = await db().from("allowed_emails").select("email").in("email", emails.slice(i, i + 200));
+    for (const r of (data ?? []) as { email: string }[]) approved.add(r.email);
+  }
+  const withAccess = readers.map((u) => ({ ...u, access: u.role === "owner" || (!!u.email && approved.has(u.email.toLowerCase())) }));
+
   return json({
-    counts,
+    counts: { ...counts, active: withAccess.filter((u) => u.access).length },
     requests: requests.data ?? [],
     allowed: { items: allowed.data ?? [], total, nextOffset: offset + limit < total ? offset + limit : null },
-    users: users.data ?? [],
+    users: withAccess,
   });
 }
 
