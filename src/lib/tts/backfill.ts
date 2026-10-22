@@ -20,7 +20,29 @@ export interface BackfillReport {
   found: number;
   failed: number;
   remaining: number;
-  stopped: "done" | "time" | "budget" | "off" | "errors";
+  stopped: "done" | "time" | "budget" | "off" | "errors" | "busy";
+}
+
+const LEASE = "audio-backfill";
+const LEASE_SECONDS = 90;
+
+async function takeLease(holder: string): Promise<boolean> {
+  const { data, error } = await db().rpc("take_lease", { p_name: LEASE, p_holder: holder, p_seconds: LEASE_SECONDS });
+  return !error && data === true;
+}
+
+/** Whether a run currently holds the lock (i.e. audio is being made right now). */
+export async function backfillRunning(): Promise<boolean> {
+  const { data } = await db().from("job_leases").select("until").eq("name", LEASE).maybeSingle();
+  return !!data && new Date(data.until as string).getTime() > Date.now();
+}
+
+export async function pendingAudio(): Promise<{ ready: number; total: number }> {
+  const [{ count: total }, { count: pending }] = await Promise.all([
+    db().from("ideas").select("id", { count: "exact", head: true }),
+    db().from("ideas").select("id", { count: "exact", head: true }).is("audio_at", null),
+  ]);
+  return { ready: (total ?? 0) - (pending ?? 0), total: total ?? 0 };
 }
 
 /**
@@ -32,7 +54,11 @@ export async function backfillAudio(deadline: number, log: (m: string) => void =
   const report: BackfillReport = { made: 0, found: 0, failed: 0, remaining: 0, stopped: "done" };
   if (!c) return { ...report, stopped: "off" };
   const budget = c.limit - RESERVE;
+  // One runner at a time (schedule, admin button, scripts), renewed per card.
+  const holder = crypto.randomUUID();
+  if (!(await takeLease(holder))) return { ...report, stopped: "busy" };
 
+  try {
   while (Date.now() < deadline) {
     const rows = must(
       await db().from("ideas").select("id, title, text").is("audio_at", null).order("created_at", { ascending: false }).limit(25),
@@ -43,6 +69,10 @@ export async function backfillAudio(deadline: number, log: (m: string) => void =
     for (const r of rows) {
       if (Date.now() >= deadline) {
         report.stopped = "time";
+        break;
+      }
+      if (!(await takeLease(holder))) {
+        report.stopped = "busy";
         break;
       }
       const key = frontKey(r.id);
@@ -85,6 +115,9 @@ export async function backfillAudio(deadline: number, log: (m: string) => void =
     }
     if (report.stopped !== "done" || !progressed) break;
   }
+  } finally {
+    await db().rpc("release_lease", { p_name: LEASE, p_holder: holder });
+  }
   if (report.stopped === "done" && Date.now() >= deadline) report.stopped = "time";
   const { count } = await db().from("ideas").select("id", { count: "exact", head: true }).is("audio_at", null);
   report.remaining = count ?? 0;
@@ -97,4 +130,16 @@ export async function audioReady(ids: string[]): Promise<Set<string>> {
   const { data, error } = await db().rpc("audio_ready_ids", { p_ids: ids });
   if (error) return new Set();
   return new Set((data as string[] | null) ?? []);
+}
+
+/**
+ * Start a round of /api/tts/backfill on the server and let it run on its own;
+ * each round starts the next while cards remain (see that route).
+ */
+export async function startAudioRound(origin: string, secret: string, hop: number) {
+  await fetch(`${origin}/api/tts/backfill?chain=${hop}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${secret}` },
+    signal: AbortSignal.timeout(5_000),
+  }).catch(() => {});
 }

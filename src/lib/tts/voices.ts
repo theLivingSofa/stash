@@ -1,15 +1,8 @@
 /**
- * Natural (online) voices from Azure's free neural tier. Settings stores the
- * choice as "azure:<id>" in the same field as on-device voice names.
+ * The one natural (online) voice, from Azure's free neural tier. Every card's
+ * audio is made in it once and reused; the phone's own voice is only a fallback.
  */
-export const NATURAL_VOICES = [
-  { id: "en-IN-NeerjaNeural", label: "Neerja (Indian English)" },
-  { id: "en-IN-PrabhatNeural", label: "Prabhat (Indian English)" },
-  { id: "en-US-AvaMultilingualNeural", label: "Ava (American)" },
-  { id: "en-US-AndrewMultilingualNeural", label: "Andrew (American)" },
-  { id: "en-GB-SoniaNeural", label: "Sonia (British)" },
-  { id: "en-GB-RyanNeural", label: "Ryan (British)" },
-] as const;
+export const NATURAL_VOICES = [{ id: "en-IN-NeerjaNeural", label: "Neerja (Indian English)" }] as const;
 
 export type NaturalVoiceId = (typeof NATURAL_VOICES)[number]["id"];
 

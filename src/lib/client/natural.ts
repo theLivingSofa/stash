@@ -1,6 +1,6 @@
 "use client";
 
-import { DEFAULT_NATURAL, isNaturalVoice, NATURAL_PREFIX } from "../tts/voices";
+import { DEFAULT_NATURAL } from "../tts/voices";
 
 /**
  * Natural (online) read-aloud: plays the MP3 the server makes once per card and
@@ -45,13 +45,10 @@ export function subscribeNatural(cb: () => void) {
 
 export const naturalStatus = () => status;
 
-/** Whether a tap should use the natural voice, given the saved voice choice. */
-export function naturalVoiceFor(choice: string | null | undefined): string | null {
+/** The natural voice to use now, or null to fall back to the phone's voice. */
+export function naturalVoiceFor(): string | null {
   if (broken || !status?.enabled || (typeof navigator !== "undefined" && !navigator.onLine)) return null;
-  if (!choice) return DEFAULT_NATURAL;
-  if (!choice.startsWith(NATURAL_PREFIX)) return null;
-  const id = choice.slice(NATURAL_PREFIX.length);
-  return isNaturalVoice(id) ? id : DEFAULT_NATURAL;
+  return DEFAULT_NATURAL;
 }
 
 let audio: HTMLAudioElement | null = null;

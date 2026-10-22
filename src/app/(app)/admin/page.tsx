@@ -117,7 +117,9 @@ export default function AdminPage() {
       <People />
       <DeviceInfo />
 
-      <section className={card}>
+      <AudioPanel />
+
+      <section className={`${card} mt-3`}>
         <h2 className={h}>Buffer</h2>
         <dl className="grid grid-cols-3 gap-3">
           {[
@@ -299,5 +301,89 @@ export default function AdminPage() {
         )}
       </section>
     </div>
+  );
+}
+
+interface AudioStatus {
+  enabled: boolean;
+  ready: number;
+  total: number;
+  running: boolean;
+  used: number;
+  limit: number;
+}
+
+/** Read-aloud audio: how many cards have Neerja's audio, and a button to make the rest. */
+function AudioPanel() {
+  const [a, setA] = useState<AudioStatus | null>(null);
+  const [starting, setStarting] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+
+  const load = () =>
+    fetch("/api/admin/audio", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((x: AudioStatus | null) => x && setA(x))
+      .catch(() => {});
+
+  useEffect(() => {
+    load();
+    const t = setInterval(load, 15_000);
+    return () => clearInterval(t);
+  }, []);
+
+  async function start() {
+    setStarting(true);
+    try {
+      const r = await fetch("/api/admin/audio", { method: "POST" });
+      if (!r.ok) throw new Error();
+      setA(await r.json());
+      setNote("Started. It runs on the server, so you can close the app; the schedule also continues every 30 minutes.");
+      setTimeout(load, 8_000);
+    } catch {
+      setNote("Couldn't start it. Try again in a minute.");
+    } finally {
+      setStarting(false);
+    }
+  }
+
+  if (!a) return null;
+  const missing = a.total - a.ready;
+  const pct = a.limit ? Math.round((a.used / a.limit) * 100) : 0;
+  return (
+    <section className="glass mb-3 rounded-[22px] p-4">
+      <h2 className="mb-3 text-[15px] font-medium">Read-aloud audio (Neerja)</h2>
+      {!a.enabled ? (
+        <p className="text-muted">Natural voice isn&apos;t set up on the server.</p>
+      ) : (
+        <>
+          <dl className="grid grid-cols-3 gap-3">
+            {[
+              ["Cards ready", `${a.ready} / ${a.total}`],
+              ["Still to make", missing],
+              ["Free allowance", `${pct}%`],
+            ].map(([k, v]) => (
+              <div key={k as string}>
+                <dt className="text-[12px] text-muted">{k}</dt>
+                <dd className="font-serif text-[20px]">{v}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="mt-2 text-[12px] text-muted">
+            {a.used.toLocaleString()} of {a.limit.toLocaleString()} characters this month. Making stops on its own before the free limit.
+          </p>
+          <div className="mt-3 flex items-center gap-3">
+            <button
+              type="button"
+              onClick={start}
+              disabled={starting || a.running || missing === 0}
+              className="pill label shrink-0 bg-accent text-accent-ink disabled:opacity-50"
+            >
+              {a.running ? "Making audio…" : missing === 0 ? "All cards ready" : starting ? "Starting…" : "Make audio for new cards"}
+            </button>
+          </div>
+          {note ? <p className="mt-2 text-[12px] text-muted">{note}</p> : null}
+        </>
+      )}
+    </section>
   );
 }

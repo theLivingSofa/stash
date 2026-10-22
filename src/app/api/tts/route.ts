@@ -35,8 +35,9 @@ export async function GET(req: Request) {
   if (!c) return fail(501, "natural voice not set up");
 
   const q = Query.safeParse(params);
-  if (!q.success || !isNaturalVoice(q.data.voice)) return fail(400, "bad request");
-  const { id, voice } = q.data;
+  if (!q.success) return fail(400, "bad request");
+  const { id } = q.data;
+  const voice = isNaturalVoice(q.data.voice) ? q.data.voice : DEFAULT_NATURAL;
 
   let text = SAMPLE_TEXT;
   let part = q.data.part;

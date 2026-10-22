@@ -93,7 +93,7 @@ export function CardActions({
     }
     setSpeaking(card.id);
     const done = () => speakingId === card.id && setSpeaking(null);
-    const natural = naturalVoiceFor(settings.voice);
+    const natural = naturalVoiceFor();
     if (natural) {
       playNatural({
         id: card.id,
@@ -110,7 +110,7 @@ export function CardActions({
       return;
     }
     speak(cardSpeech(card, false), {
-      voice: settings.voice,
+      voice: null,
       rate: settings.rate,
       onEnd: () => speakingId === card.id && setSpeaking(null),
       onFail: () => {
