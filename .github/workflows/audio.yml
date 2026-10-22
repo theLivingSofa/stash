@@ -10,6 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: write
   contents: read
 
 concurrency:
@@ -40,3 +41,11 @@ jobs:
             if [ "$stopped" = "busy" ]; then sleep 30; continue; fi
             if [ "$stopped" != "time" ] || [ "$remaining" = "0" ]; then break; fi
           done
+
+      # Public repos have scheduled workflows disabled after 60 days without
+      # commits. Re-enabling via the API resets that clock.
+      - name: Keep the schedule alive
+        if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/audio.yml/enable" || true
