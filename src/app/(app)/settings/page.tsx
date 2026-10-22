@@ -42,16 +42,17 @@ export default function SettingsPage() {
   }
 
   const row = "flex items-center justify-between gap-4 border-b border-line px-1 py-4";
-  const seg = (on: boolean) => `rounded-full px-3.5 py-1.5 text-[14px] ${on ? "bg-accent text-accent-ink" : "text-muted"}`;
+  const seg = (on: boolean) => `label rounded-full px-3.5 py-1.5 text-[14px] ${on ? "bg-accent text-accent-ink" : "text-muted"}`;
 
   return (
-    <div className="absolute inset-0 overflow-y-auto overscroll-contain px-5 pt-1 pb-10">
+    <div className="page-scroll px-4 pt-1">
       <h1 className="sr-only">Settings</h1>
+      <div className="glass rounded-[26px] px-4 pb-1" style={{ ["--light" as string]: "var(--accent)" }}>
       <Account me={me} />
 
       <div className={row}>
         <span className="text-[15px]">Theme</span>
-        <div className="flex rounded-full border border-line p-1" role="group" aria-label="Theme">
+        <div className="flex rounded-full bg-surface-2 p-1" role="group" aria-label="Theme">
           <button type="button" className={seg(s.theme === "dark")} aria-pressed={s.theme === "dark"} onClick={() => update({ theme: "dark" })}>
             Dark
           </button>
@@ -96,7 +97,7 @@ export default function SettingsPage() {
               id="voice"
               value={s.voice ?? ""}
               onChange={(e) => update({ voice: e.target.value || null })}
-              className="min-w-0 flex-1 rounded-xl border border-line bg-surface px-3 py-2 text-[14px]"
+              className="field-input compact min-w-0 flex-1"
             >
               <option value="">Automatic (most natural installed)</option>
               {voices.map((v) => (
@@ -108,7 +109,7 @@ export default function SettingsPage() {
             </select>
             <button
               type="button"
-              className="rounded-xl border border-line px-3 text-[14px]"
+              className="pill label rounded-xl border border-line px-3.5 text-[14px]"
               onClick={() =>
                 speak("This is how your ideas will sound.", {
                   voice: s.voice,
@@ -148,7 +149,7 @@ export default function SettingsPage() {
           <span className="block text-[15px]">Fetch new ideas now</span>
           <span className="block text-[13px] text-muted">Normally this happens every 30 minutes</span>
         </span>
-        <button type="button" onClick={refreshNow} disabled={refreshing} className="shrink-0 rounded-full border border-line px-4 py-2 text-[14px] disabled:opacity-60">
+        <button type="button" onClick={refreshNow} disabled={refreshing} className="pill label shrink-0 border border-line disabled:opacity-60">
           {refreshing ? "Starting…" : "Refresh now"}
         </button>
       </div>
@@ -165,7 +166,9 @@ export default function SettingsPage() {
       </Link>
       ) : null}
 
-      <button type="button" onClick={logout} className="mt-6 px-1 text-[15px] text-danger">
+      </div>
+
+      <button type="button" onClick={logout} className="pill label chrome mx-auto mt-6 flex text-[15px] text-danger">
         Log out
       </button>
     </div>

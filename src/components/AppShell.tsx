@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import { setLightTopic } from "@/lib/client/light";
 import { topicLabel } from "@/lib/topics";
 import { IconClose, IconExplore, IconFeed, IconFlame, IconLibrary, IconSettings } from "./Icons";
+import { Lightfield } from "./Lightfield";
 import { Toaster } from "./Toast";
 
 const NAV = [
@@ -16,19 +18,26 @@ const NAV = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  // Off the feed, the room returns to the house light.
+  useEffect(() => {
+    if (pathname !== "/") setLightTopic(null);
+  }, [pathname]);
   return (
-    <div className="app-frame">
-      <header className="flex shrink-0 items-center justify-between gap-3 px-5" style={{ height: "var(--top-h)" }}>
-        <Link href="/" className="font-serif text-[21px] font-semibold tracking-tight" aria-label="Stash, go to feed">
-          Stash
-        </Link>
-        <Suspense fallback={null}>
-          <FilterChip />
-        </Suspense>
-        <Streak />
-      </header>
-      <main className="app-main">{children}</main>
-      <nav className="bottom-nav grid shrink-0 grid-cols-4" aria-label="Main">
+    <>
+      <Lightfield />
+      <div className="app-frame">
+        <header className="flex shrink-0 items-center justify-between gap-3 px-5" style={{ height: "var(--top-h)" }}>
+          <Link href="/" className="display text-[27px] leading-none tracking-[-0.01em]" style={{ fontStretch: "72%" }} aria-label="Stash, go to feed">
+            Stash
+          </Link>
+          <Suspense fallback={null}>
+            <FilterChip />
+          </Suspense>
+          <Streak />
+        </header>
+        <main className="app-main">{children}</main>
+      </div>
+      <nav className="dock chrome grid grid-cols-4" aria-label="Main">
         {NAV.map(({ href, label, Icon }) => {
           const on = href === "/" ? pathname === "/" : pathname.startsWith(href);
           return (
@@ -36,16 +45,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               key={href}
               href={href}
               aria-current={on ? "page" : undefined}
-              className={`flex flex-col items-center justify-center gap-0.5 text-[11.5px] ${on ? "text-accent" : "text-muted"}`}
+              className={`label flex flex-col items-center justify-center gap-0.5 rounded-full text-[11.5px] transition-colors ${
+                on ? "bg-surface-2 text-text" : "text-muted"
+              }`}
             >
-              <Icon size={22} />
+              <Icon size={21} style={on ? { color: "var(--accent)" } : undefined} />
               {label}
             </Link>
           );
         })}
       </nav>
       <Toaster />
-    </div>
+    </>
   );
 }
 
@@ -60,7 +71,7 @@ function FilterChip() {
     <div className="flex min-w-0 flex-1 justify-center">
       <Link
         href="/"
-        className="inline-flex min-w-0 items-center gap-1.5 rounded-full border border-line bg-surface-2 py-1 pr-2 pl-3 text-[13px]"
+        className="chrome pill label min-w-0 py-1.5 pr-2.5 pl-3.5 text-[13px]"
         aria-label={`Showing ${label}. Clear filter`}
       >
         <span className="truncate">{label}</span>
@@ -85,13 +96,13 @@ function Streak() {
   }, [pathname]);
   return (
     <span
-      className="inline-flex min-w-[3.25rem] items-center justify-end gap-1 text-[13.5px] text-muted"
+      className={`label tabular inline-flex min-w-[3.25rem] items-center justify-center gap-1 rounded-full px-3 py-1.5 text-[13.5px] ${streak != null ? "chrome" : ""}`}
       title="Days in a row you've read at least one idea"
       aria-label={streak != null ? `${streak} day reading streak` : undefined}
     >
       {streak != null ? (
         <>
-          <IconFlame className={streak > 0 ? "text-accent" : undefined} />
+          <IconFlame style={{ color: streak > 0 ? "var(--accent)" : undefined }} />
           {streak}
         </>
       ) : null}

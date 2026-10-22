@@ -100,34 +100,33 @@ export function CardActions({
     });
   };
 
-  const btn = "inline-flex h-10 w-10 items-center justify-center rounded-full text-muted transition-colors hover:text-text active:bg-surface-2";
+  const btn = "icon-btn";
 
+  // On the back there's no Turn-over pill, so the row spreads across the foot.
   return (
-    <div className="flex items-center justify-between pt-1">
-      <div className="-ml-2.5 flex items-center gap-1">
-        <button type="button" className={btn} onClick={() => react(1)} aria-pressed={card.reaction === 1} aria-label="More like this">
-          <IconMore filled={card.reaction === 1} className={card.reaction === 1 ? "text-accent" : undefined} />
+    <div className={`flex items-center ${includeBack ? "justify-between" : "gap-0.5"}`}>
+      <button type="button" className={btn} onClick={() => react(1)} aria-pressed={card.reaction === 1} aria-label="More like this">
+        <IconMore size={21} filled={card.reaction === 1} style={card.reaction === 1 ? { color: "var(--light, var(--accent))" } : undefined} />
+      </button>
+      <button type="button" className={btn} onClick={() => react(-1)} aria-pressed={card.reaction === -1} aria-label="Less like this">
+        <IconLess size={21} filled={card.reaction === -1} className={card.reaction === -1 ? "text-danger" : undefined} />
+      </button>
+      {speechOk ? (
+        <button type="button" className={btn} onClick={toggleSpeak} aria-pressed={speaking} aria-label={speaking ? "Stop reading aloud" : "Read aloud"}>
+          <IconSpeak size={21} active={speaking} style={speaking ? { color: "var(--light, var(--accent))" } : undefined} />
         </button>
-        <button type="button" className={btn} onClick={() => react(-1)} aria-pressed={card.reaction === -1} aria-label="Less like this">
-          <IconLess filled={card.reaction === -1} className={card.reaction === -1 ? "text-danger" : undefined} />
-        </button>
-        {speechOk ? (
-          <button type="button" className={btn} onClick={toggleSpeak} aria-pressed={speaking} aria-label={speaking ? "Stop reading aloud" : "Read aloud"}>
-            <IconSpeak active={speaking} className={speaking ? "text-accent" : undefined} />
-          </button>
-        ) : null}
-        <button type="button" className={btn} onClick={share} aria-label="Share">
-          <IconShare />
-        </button>
-      </div>
+      ) : null}
+      <button type="button" className={btn} onClick={share} aria-label="Share">
+        <IconShare size={21} />
+      </button>
       <button
         type="button"
-        className={`${btn} -mr-2.5 ${card.saved ? "text-accent" : ""}`}
+        className={btn}
         onClick={save}
         aria-pressed={card.saved}
         aria-label={card.saved ? "Remove from Library" : "Save to Library"}
       >
-        <IconBookmark filled={card.saved} className={pop ? "save-pop" : undefined} />
+        <IconBookmark size={21} filled={card.saved} className={pop ? "save-pop" : undefined} style={card.saved ? { color: "var(--light, var(--accent))" } : undefined} />
       </button>
     </div>
   );

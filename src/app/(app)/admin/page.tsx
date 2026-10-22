@@ -107,11 +107,11 @@ export default function AdminPage() {
   const today = new Date().toISOString().slice(0, 10);
   const usageToday = d.usage.filter((u) => u.day === today);
   const failing = d.sources.filter((s) => s.enabled && s.fail_count > 0);
-  const card = "rounded-2xl border border-line bg-surface p-4";
+  const card = "glass rounded-[22px] p-4";
   const h = "mb-3 text-[15px] font-medium";
 
   return (
-    <div className="absolute inset-0 overflow-y-auto overscroll-contain px-4 pt-1 pb-10 text-[14px]">
+    <div className="page-scroll px-4 pt-1 text-[14px]">
       <h1 className="mb-4 px-1 font-serif text-[22px]">Behind the scenes</h1>
 
       <People />

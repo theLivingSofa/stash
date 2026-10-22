@@ -1,13 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { Literata, Schibsted_Grotesk } from "next/font/google";
+import { Archivo, Source_Serif_4 } from "next/font/google";
 import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ServiceWorker } from "@/components/ServiceWorker";
 import "./globals.css";
 
-const literata = Literata({ variable: "--font-literata", subsets: ["latin"], axes: ["opsz"], display: "swap" });
-const schibsted = Schibsted_Grotesk({ variable: "--font-schibsted", subsets: ["latin"], display: "swap" });
+// Archivo's width axis gives the mount-label voice (condensed caps) and the UI;
+// Source Serif 4 with optical sizing carries the reading.
+const archivo = Archivo({ variable: "--font-archivo", subsets: ["latin"], axes: ["wdth"], display: "swap" });
+const sourceSerif = Source_Serif_4({ variable: "--font-source-serif", subsets: ["latin"], axes: ["opsz"], display: "swap" });
 
 export const metadata: Metadata = {
   title: "Stash",
@@ -30,8 +32,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#111a2c" },
-    { media: "(prefers-color-scheme: light)", color: "#e9edf4" },
+    { media: "(prefers-color-scheme: dark)", color: "#14110f" },
+    { media: "(prefers-color-scheme: light)", color: "#e6ece7" },
   ],
 };
 
@@ -47,7 +49,7 @@ const settingsScript = `(function(){try{var s=JSON.parse(localStorage.getItem("s
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" data-theme="dark" className={`${literata.variable} ${schibsted.variable}`} suppressHydrationWarning>
+    <html lang="en" data-theme="dark" className={`${archivo.variable} ${sourceSerif.variable}`} suppressHydrationWarning>
       <body>
         <Script id="stash-settings" strategy="beforeInteractive">
           {settingsScript + fitScript}

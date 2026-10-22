@@ -21,7 +21,7 @@ export default function ExplorePage() {
   }, []);
 
   return (
-    <div className="absolute inset-0 overflow-y-auto overscroll-contain px-4 pt-2 pb-8">
+    <div className="page-scroll px-4 pt-1">
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -37,27 +37,41 @@ export default function ExplorePage() {
           placeholder="Follow a concept or a person"
           aria-label="Follow a concept or a person"
           enterKeyHint="go"
-          className="w-full rounded-2xl border border-line bg-surface py-3.5 pr-4 pl-11 text-[16px] outline-none placeholder:text-faint focus:border-accent"
+          className="field-input with-icon"
         />
       </form>
-      <p className="mt-2 px-1 text-[13px] leading-relaxed text-faint">
+      <p className="mt-2.5 px-1 text-[13.5px] leading-relaxed text-muted">
         Matches by meaning as well as words, so &ldquo;happiness&rdquo; also finds well-being. Names work too, like Ada
         Lovelace. If you&apos;ve run out, Stash fetches new ideas on it.
       </p>
 
-      <h2 className="mt-7 mb-3 px-1 text-[15px] font-medium">Topics</h2>
-      <ul className="grid grid-cols-2 gap-2.5">
+      <h1 className="display mt-8 mb-3 px-1 text-[20px]" style={{ fontStretch: "76%" }}>
+        Topics
+      </h1>
+      <ul className="grid grid-cols-2 gap-3">
         {(topics ?? TOPICS.map((t) => ({ ...t, total: -1, unseen: -1 }))).map((t) => (
           <li key={t.slug}>
             <Link
               href={`/?topic=${t.slug}`}
-              className="relative flex h-[92px] flex-col justify-between overflow-hidden rounded-2xl border border-line bg-surface py-3 pr-3 pl-5"
-              style={{ ["--spine" as string]: `var(--t-${t.slug})` }}
+              className="glass block rounded-[22px] p-2"
+              style={{ ["--light" as string]: `var(--t-${t.slug})` }}
             >
-              <span className="absolute inset-y-0 left-0 w-1.5" style={{ background: "var(--spine)" }} aria-hidden />
-              <span className="font-serif text-[17px] leading-tight">{t.label}</span>
-              <span className="text-[12.5px] text-muted">
-                {t.unseen < 0 ? <span className="skeleton inline-block h-3 w-16 align-middle" /> : `${t.unseen} new`}
+              {/* The slide's film: the topic's dye, lit from behind. */}
+              <span
+                className="flex h-[78px] items-end rounded-[15px] px-3 pb-2.5"
+                style={{
+                  background:
+                    "radial-gradient(120% 90% at 30% 10%, color-mix(in oklab, var(--light) 55%, white), var(--light) 55%, color-mix(in oklab, var(--light) 72%, black))",
+                  boxShadow: "inset 0 0 0 1px rgba(0,0,0,.14), 0 0 22px -6px var(--light)",
+                }}
+              >
+                <span className="display text-[19px] leading-none text-[#15110c]" style={{ fontStretch: "72%" }}>
+                  {t.label}
+                </span>
+              </span>
+              <span className="band px-1.5 pt-2.5 pb-1">
+                <span className="tabular">{t.unseen < 0 ? "…" : `${t.unseen} new`}</span>
+                <span className="tabular ml-auto opacity-60">{t.total < 0 ? "" : `${t.total} total`}</span>
               </span>
             </Link>
           </li>

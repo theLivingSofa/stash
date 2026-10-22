@@ -59,10 +59,10 @@ export function LoginForm() {
   }
 
   return (
-    <div className="mt-10 space-y-4">
+    <div className="mt-9 space-y-4">
       <a
         href={`/api/auth/google?next=${encodeURIComponent(safeNext)}`}
-        className="flex w-full items-center justify-center gap-3 rounded-2xl bg-accent px-4 py-3.5 text-[16px] font-medium text-accent-ink"
+        className="label flex w-full items-center justify-center gap-3 rounded-full bg-accent px-4 py-3.5 text-[16.5px] text-accent-ink shadow-[0_10px_24px_-10px_var(--accent)]"
       >
         <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white">
           <GoogleMark />
@@ -89,20 +89,20 @@ export function LoginForm() {
             autoFocus
             value={passcode}
             onChange={(e) => setPasscode(e.target.value)}
-            className="w-full rounded-2xl border border-line bg-surface px-4 py-3.5 text-[17px] outline-none focus:border-accent"
+            className="field-input text-[17px]"
             aria-invalid={!!error}
             aria-describedby={error ? "login-error" : undefined}
           />
           <button
             type="submit"
             disabled={busy}
-            className="w-full rounded-2xl border border-line bg-surface px-4 py-3.5 text-[16px] font-medium disabled:opacity-60"
+            className="label w-full rounded-full border border-line bg-surface-2 px-4 py-3.5 text-[16px] disabled:opacity-60"
           >
             {busy ? "Unlocking…" : "Unlock"}
           </button>
         </form>
       ) : (
-        <button type="button" onClick={() => setShowPasscode(true)} className="block w-full pt-1 text-center text-[14px] text-muted underline-offset-4 hover:underline">
+        <button type="button" onClick={() => setShowPasscode(true)} className="label block w-full pt-1 text-center text-[14px] text-muted underline-offset-4 hover:underline">
           Use the passcode instead
         </button>
       )}

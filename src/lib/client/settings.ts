@@ -35,7 +35,7 @@ function apply(s: Settings) {
     document.head.appendChild(m);
     return m;
   })();
-  meta.setAttribute("content", s.theme === "light" ? "#e9edf4" : "#111a2c");
+  meta.setAttribute("content", s.theme === "light" ? "#e6ece7" : "#14110f");
 }
 
 export function updateSettings(patch: Partial<Settings>) {

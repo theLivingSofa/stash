@@ -45,3 +45,8 @@ next-env.d.ts
 /test-results
 /playwright-report
 !.env.example
+
+# impeccable working files
+/.impeccable/mocks
+/.impeccable/review
+/.impeccable/build

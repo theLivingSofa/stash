@@ -55,7 +55,7 @@ export function IdeaView({ id }: { id: string }) {
   return (
     <div className="absolute inset-0 flex flex-col">
       <div className="flex items-center justify-between gap-3 px-3 pb-1">
-        <button type="button" onClick={() => router.back()} className="inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[14px] text-muted">
+        <button type="button" onClick={() => router.back()} className="pill label chrome text-muted">
           <IconBack /> Library
         </button>
         {collections.length > 0 && card ? (
@@ -66,7 +66,7 @@ export function IdeaView({ id }: { id: string }) {
               void addTo(e.target.value);
               e.target.value = "";
             }}
-            className="max-w-[55%] rounded-full border border-line bg-surface px-3 py-1.5 text-[13.5px]"
+            className="chrome label max-w-[55%] rounded-full px-3.5 py-2 text-[13.5px] text-text"
           >
             <option value="" disabled>
               Add to collection
@@ -79,13 +79,13 @@ export function IdeaView({ id }: { id: string }) {
           </select>
         ) : null}
       </div>
-      <div className="relative min-h-0 flex-1 px-3.5 pb-3">
+      <div className="relative min-h-0 flex-1 px-3.5" style={{ paddingBottom: "calc(var(--dock-space) + 6px)" }}>
         {card ? (
           <IdeaCard card={card} onUpdate={onUpdate} onRelated={onRelated} />
         ) : missing ? (
-          <p className="px-4 pt-10 font-serif text-[18px]">This idea is no longer in your library.</p>
+          <p className="px-4 pt-10 font-serif text-[19px]">This idea is no longer in your library.</p>
         ) : (
-          <div className="face" style={{ position: "relative", height: "100%" }}>
+          <div className="face glass" style={{ position: "relative", height: "100%", ["--light" as string]: "var(--accent)" }}>
             <div className="space-y-3 p-8">
               <div className="skeleton h-3 w-24" />
               <div className="skeleton h-5 w-full" />

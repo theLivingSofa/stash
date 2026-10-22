@@ -8,6 +8,7 @@ import { flush, initEvents, track } from "@/lib/client/events";
 import { cachedCards, rememberCards } from "@/lib/client/cache";
 import { useSettings } from "@/lib/client/settings";
 import { stopSpeaking } from "@/lib/client/speak";
+import { setLightTopic } from "@/lib/client/light";
 import { IdeaCard } from "./IdeaCard";
 
 const SEEN_AFTER_MS = 1_500;
@@ -32,6 +33,8 @@ export function Feed({ topic, concept }: { topic?: string; concept?: string }) {
   const cursorRef = useRef<string | null>(null);
   const loadingRef = useRef(false);
   const seenRef = useRef(new Set<string>());
+  // Mirrors seenRef for rendering: seen cards get the grease-pencil tick.
+  const [seenIds, setSeenIds] = useState<ReadonlySet<string>>(() => new Set());
   const genRef = useRef(0);
   const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -150,11 +153,17 @@ export function Feed({ topic, concept }: { topic?: string; concept?: string }) {
   }, [height]);
 
   const activeId = cards[active]?.id;
+  const activeTopic = cards[active]?.topics[0] ?? null;
+  // The room takes the light of the slide you're reading.
+  useEffect(() => {
+    setLightTopic(activeTopic);
+  }, [activeTopic]);
   useEffect(() => {
     if (flippedId && activeId !== flippedId) setFlippedId(null);
     if (activeId && !seenRef.current.has(activeId)) {
       const t = setTimeout(() => {
         seenRef.current.add(activeId);
+        setSeenIds(new Set(seenRef.current));
         track(activeId, "seen");
       }, SEEN_AFTER_MS);
       return () => clearTimeout(t);
@@ -261,7 +270,7 @@ export function Feed({ topic, concept }: { topic?: string; concept?: string }) {
           style={{ transform: `translateY(${refreshing ? 18 : pull - 24}px)` }}
           aria-hidden
         >
-          <span className="rounded-full border border-line bg-surface-2 px-3 py-1 text-[13px] text-muted">
+          <span className="chrome label rounded-full px-3.5 py-1.5 text-[13px] text-muted">
             {refreshing ? "Loading fresh ideas…" : pull >= PULL_TRIGGER ? "Release for fresh ideas" : "Pull for fresh ideas"}
           </span>
         </div>
@@ -269,7 +278,7 @@ export function Feed({ topic, concept }: { topic?: string; concept?: string }) {
 
       {status === "offline" ? (
         <div className="absolute inset-x-0 top-0 z-10 flex justify-center pt-2" role="status">
-          <span className="rounded-full border border-line bg-surface-2 px-3 py-1 text-[12.5px] text-muted">
+          <span className="chrome label rounded-full px-3.5 py-1.5 text-[12.5px] text-muted">
             Offline. Showing your last {cards.length} cards.
           </span>
         </div>
@@ -302,6 +311,7 @@ export function Feed({ topic, concept }: { topic?: string; concept?: string }) {
                   {card ? (
                     <IdeaCard
                       card={card}
+                      seen={seenIds.has(card.id)}
                       forceFront={vi.index !== active}
                       onUpdate={onUpdate}
                       onRelated={onRelated}
@@ -329,26 +339,34 @@ function LoaderCard({ status, pending, onRetry }: { status: Status; pending: boo
           ? "Finding new ideas for you. This takes about a minute."
           : null;
   return (
-    <div className="face relative h-full" style={{ position: "relative" }}>
-      <div className="flex h-full flex-col justify-center gap-4 px-8">
-        {message ? (
-          <>
-            <p className="font-serif text-[19px] leading-relaxed">{message}</p>
-            {status !== "loading" ? (
-              <button type="button" onClick={onRetry} className="self-start rounded-full border border-line px-4 py-2 text-[14px]">
-                Try now
-              </button>
-            ) : null}
-          </>
-        ) : (
-          <div className="space-y-3" role="status" aria-label="Loading ideas">
-            <div className="skeleton h-3 w-24" />
-            <div className="skeleton h-5 w-full" />
-            <div className="skeleton h-5 w-[94%]" />
-            <div className="skeleton h-5 w-[88%]" />
-            <div className="skeleton h-5 w-[60%]" />
-          </div>
-        )}
+    <div className="card3d">
+      <div className="face glass" style={{ ["--light" as string]: "var(--accent)" }}>
+        <div className="band" aria-hidden>
+          <span className="chip-film" />
+          <span>{message ? "Stash" : "Loading"}</span>
+          <span className="tabular ml-auto opacity-70">No. ----</span>
+        </div>
+        <div className="window flex flex-col justify-center gap-5 px-7">
+          {message ? (
+            <>
+              <p className="font-serif text-[21px] leading-relaxed">{message}</p>
+              {status !== "loading" ? (
+                <button type="button" onClick={onRetry} className="pill self-start border border-line">
+                  Try now
+                </button>
+              ) : null}
+            </>
+          ) : (
+            <div className="space-y-3.5" role="status" aria-label="Loading ideas">
+              <div className="skeleton h-3.5 w-32" />
+              <div className="skeleton h-6 w-full" />
+              <div className="skeleton h-6 w-[94%]" />
+              <div className="skeleton h-6 w-[88%]" />
+              <div className="skeleton h-6 w-[60%]" />
+            </div>
+          )}
+        </div>
+        <div className="h-[50px]" aria-hidden />
       </div>
     </div>
   );

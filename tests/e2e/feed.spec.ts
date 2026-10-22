@@ -116,7 +116,7 @@ test.describe("feed and card flip", () => {
 
   test("related chip filters the feed and it keeps going", async ({ page }) => {
     const card = await activeCard(page);
-    await card.getByRole("button", { name: "Details" }).click();
+    await card.getByRole("button", { name: "Turn over" }).click();
     const chip = card.locator(".face-back section").filter({ hasText: "Related" }).getByRole("button").first();
     const label = (await chip.textContent())!.trim();
     await chip.click();
@@ -128,7 +128,7 @@ test.describe("feed and card flip", () => {
   test("save from the back lands in the Library (front and back)", async ({ page }) => {
     const card = await activeCard(page);
     const title = (await card.locator(".face-front h2").first().textContent())?.trim();
-    await card.getByRole("button", { name: "Details" }).click();
+    await card.getByRole("button", { name: "Turn over" }).click();
     const save = card.locator(".face-back").getByRole("button", { name: "Save to Library" });
     await save.click();
     await expect(card.locator(".face-back").getByRole("button", { name: "Remove from Library" })).toHaveAttribute("aria-pressed", "true");
@@ -138,7 +138,7 @@ test.describe("feed and card flip", () => {
     const item = page.getByRole("link").filter({ hasText: title ?? "" }).first();
     await expect(item).toBeVisible();
     await item.click();
-    await page.getByRole("button", { name: "Details" }).click();
+    await page.getByRole("button", { name: "Turn over" }).click();
     await expect(page.getByText("Where it comes from")).toBeVisible();
     // Clean up: unsave.
     await page.locator(".face-back").getByRole("button", { name: "Remove from Library" }).click();
@@ -155,7 +155,7 @@ test.describe("feed and card flip", () => {
     await page.reload();
     await expect(page.getByText(/Offline\. Showing your last \d+ cards/)).toBeVisible({ timeout: 20_000 });
     const card = page.locator(".feed-item[data-index='0']");
-    await card.getByRole("button", { name: "Details" }).click();
+    await card.getByRole("button", { name: "Turn over" }).click();
     await expect(card.getByText("Concept", { exact: true })).toBeVisible();
     await context.setOffline(false);
   });

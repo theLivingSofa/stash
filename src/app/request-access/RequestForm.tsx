@@ -30,7 +30,7 @@ export function RequestForm() {
   if (state === "sent") {
     return (
       <div className="mt-8 space-y-4" role="status">
-        <p className="rounded-2xl border border-line bg-surface px-4 py-3.5 text-[15px] leading-relaxed">
+        <p className="rounded-2xl bg-surface-2 px-4 py-3.5 text-[15px] leading-relaxed">
           Request sent. You&apos;ll be able to sign in once it&apos;s approved. Try &ldquo;Continue with Google&rdquo; again later.
         </p>
         <Link href="/login" className="block text-center text-[14px] text-muted underline-offset-4 hover:underline">
@@ -52,7 +52,7 @@ export function RequestForm() {
         maxLength={300}
         rows={3}
         placeholder="Hey, it's me from…"
-        className="w-full resize-none rounded-2xl border border-line bg-surface px-4 py-3 text-[16px] outline-none placeholder:text-faint focus:border-accent"
+        className="field-input resize-none"
       />
       {error ? (
         <p className="text-[14px] text-danger" role="alert">
@@ -62,7 +62,7 @@ export function RequestForm() {
       <button
         type="submit"
         disabled={state === "sending"}
-        className="w-full rounded-2xl bg-accent px-4 py-3.5 text-[16px] font-medium text-accent-ink disabled:opacity-60"
+        className="label w-full rounded-full bg-accent px-4 py-3.5 text-[16px] text-accent-ink disabled:opacity-60"
       >
         {state === "sending" ? "Sending…" : "Request access"}
       </button>

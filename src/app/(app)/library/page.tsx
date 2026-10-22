@@ -93,11 +93,15 @@ export default function LibraryPage() {
     toast(`Created “${d.collection.name}”`);
   }
 
-  const chip = (on: boolean) =>
-    `shrink-0 rounded-full border px-3.5 py-1.5 text-[13.5px] ${on ? "border-accent bg-accent text-accent-ink" : "border-line bg-surface text-text"}`;
+  const chip = (on: boolean) => `pill label shrink-0 ${on ? "bg-accent text-accent-ink" : "chrome text-text"}`;
+  const film = {
+    background:
+      "radial-gradient(120% 90% at 30% 10%, color-mix(in oklab, var(--light) 55%, white), var(--light) 55%, color-mix(in oklab, var(--light) 72%, black))",
+    boxShadow: "inset 0 0 0 1px rgba(0,0,0,.14), 0 0 18px -6px var(--light)",
+  };
 
   return (
-    <div className="absolute inset-0 overflow-y-auto overscroll-contain px-4 pt-2 pb-8">
+    <div className="page-scroll px-4 pt-1">
       <div className="relative" role="search">
         <IconSearch className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-muted" />
         <input
@@ -106,11 +110,11 @@ export default function LibraryPage() {
           placeholder="Search your library"
           aria-label="Search your library"
           type="search"
-          className="w-full rounded-2xl border border-line bg-surface py-3.5 pr-4 pl-11 text-[16px] outline-none placeholder:text-faint focus:border-accent"
+          className="field-input with-icon"
         />
       </div>
 
-      <div className="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4" role="group" aria-label="Show">
+      <div className="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 py-1" role="group" aria-label="Show">
         {(["all", "saved", "liked"] as Kind[]).map((k) => (
           <button key={k} type="button" className={chip(kind === k)} aria-pressed={kind === k} onClick={() => setKind(k)}>
             {k === "all" ? "Everything" : k === "saved" ? "Saved" : "Liked"}
@@ -118,13 +122,13 @@ export default function LibraryPage() {
         ))}
       </div>
 
-      <div className="no-scrollbar -mx-4 mt-2 flex gap-2 overflow-x-auto px-4" role="group" aria-label="Collections">
+      <div className="no-scrollbar -mx-4 mt-1 flex gap-2 overflow-x-auto px-4 py-1" role="group" aria-label="Collections">
         <button type="button" className={chip(collection === null)} aria-pressed={collection === null} onClick={() => setCollection(null)}>
           All collections
         </button>
         {collections.map((c) => (
           <button key={c.id} type="button" className={chip(collection === c.id)} aria-pressed={collection === c.id} onClick={() => setCollection(c.id)}>
-            {c.name} <span className="opacity-70">{c.count}</span>
+            {c.name} <span className="tabular opacity-70">{c.count}</span>
           </button>
         ))}
         {creating ? (
@@ -136,60 +140,67 @@ export default function LibraryPage() {
               placeholder="Collection name"
               aria-label="New collection name"
               maxLength={60}
-              className="w-40 rounded-full border border-accent bg-surface px-3 py-1.5 text-[13.5px] outline-none"
+              className="field-input compact w-44"
             />
-            <button type="submit" className="rounded-full bg-accent px-3 py-1.5 text-[13.5px] text-accent-ink">
+            <button type="submit" className="pill label bg-accent text-accent-ink">
               Create
             </button>
           </form>
         ) : (
-          <button type="button" className="shrink-0 rounded-full border border-dashed border-line px-3.5 py-1.5 text-[13.5px] text-muted" onClick={() => setCreating(true)}>
+          <button type="button" className="pill label shrink-0 border border-dashed border-line text-muted" onClick={() => setCreating(true)}>
             New collection
           </button>
         )}
       </div>
 
-      <ul className="mt-5 space-y-2.5">
+      <ul className="mt-5 space-y-3">
         {cards === null
           ? [0, 1, 2, 3].map((i) => (
-              <li key={i} className="h-[104px] rounded-2xl border border-line bg-surface p-4">
-                <div className="skeleton h-3 w-20" />
-                <div className="skeleton mt-3 h-4 w-full" />
-                <div className="skeleton mt-2 h-4 w-3/4" />
+              <li key={i} className="glass flex h-[108px] gap-3 rounded-[22px] p-2" style={{ ["--light" as string]: "var(--accent)" }}>
+                <span className="skeleton w-[62px] shrink-0 rounded-[14px]" />
+                <span className="flex-1 space-y-2.5 py-2">
+                  <span className="skeleton block h-3 w-24" />
+                  <span className="skeleton block h-4 w-full" />
+                  <span className="skeleton block h-4 w-3/4" />
+                </span>
               </li>
             ))
           : cards.map((c) => (
               <li key={c.id}>
                 <Link
                   href={`/idea/${c.id}`}
-                  className="relative block overflow-hidden rounded-2xl border border-line bg-surface py-3.5 pr-4 pl-6"
-                  style={{ ["--spine" as string]: `var(--t-${c.topics[0] ?? "philosophy"})` }}
+                  className="glass flex gap-3 rounded-[22px] p-2"
+                  style={{ ["--light" as string]: `var(--t-${c.topics[0] ?? "philosophy"})` }}
                 >
-                  <span className="absolute inset-y-0 left-0 w-1.5" style={{ background: "var(--spine)" }} aria-hidden />
-                  <span className="flex items-center justify-between gap-3 text-[12.5px] text-muted">
-                    <span>{topicLabel(c.topics[0] ?? "")}</span>
-                    <span>{c.saved ? "Saved" : c.reaction === 1 ? "Liked" : ""}</span>
+                  <span className="w-[62px] shrink-0 rounded-[14px]" style={film} aria-hidden />
+                  <span className="min-w-0 flex-1 py-1.5 pr-2">
+                    <span className="band p-0 pb-1.5">
+                      <span>{topicLabel(c.topics[0] ?? "")}</span>
+                      <span className="ml-auto opacity-70">{c.saved ? "Saved" : c.reaction === 1 ? "Liked" : ""}</span>
+                    </span>
+                    {c.title ? <span className="label block text-[15.5px] leading-snug">{c.title}</span> : null}
+                    <span className="mt-1 line-clamp-2 block font-serif text-[15px] leading-relaxed text-muted">{c.text}</span>
                   </span>
-                  {c.title ? <span className="mt-1 block text-[14px] font-medium">{c.title}</span> : null}
-                  <span className="mt-1 line-clamp-3 block font-serif text-[15.5px] leading-relaxed">{c.text}</span>
                 </Link>
               </li>
             ))}
       </ul>
 
       {cards && cards.length === 0 ? (
-        <div className="mt-10 px-2 text-center">
-          <p className="font-serif text-[18px]">{debounced ? "Nothing in your library matches that." : "Your library is empty."}</p>
-          <p className="mt-2 text-[14px] leading-relaxed text-muted">
-            {debounced
-              ? "Try a different word, or search everything you've saved."
-              : "Tap the bookmark or the heart on any card in your feed and it will be kept here, front and back."}
-          </p>
+        <div className="glass mx-auto mt-8 max-w-sm rounded-[24px] p-2" style={{ ["--light" as string]: "var(--accent)" }}>
+          <div className="window px-6 py-8 text-center">
+            <p className="font-serif text-[19px]">{debounced ? "Nothing in your library matches that." : "Your slide sheet is empty."}</p>
+            <p className="mt-2 text-[14px] leading-relaxed text-muted">
+              {debounced
+                ? "Try a different word, or search everything you've saved."
+                : "Tap the bookmark or the heart on any card in your feed and it's kept here, front and back."}
+            </p>
+          </div>
         </div>
       ) : null}
 
       {nextOffset != null ? (
-        <button type="button" onClick={() => loadMore(nextOffset)} className="mx-auto mt-5 block rounded-full border border-line px-5 py-2 text-[14px]">
+        <button type="button" onClick={() => loadMore(nextOffset)} className="pill label chrome mx-auto mt-5 flex">
           Show more
         </button>
       ) : null}

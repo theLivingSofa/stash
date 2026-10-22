@@ -56,7 +56,7 @@ export function People() {
     }
   }
 
-  const card = "rounded-2xl border border-line bg-surface p-4";
+  const card = "glass rounded-[22px] p-4";
   const pending = d?.requests.filter((r) => r.status === "pending") ?? [];
   const btn = "rounded-full border border-line px-3 py-1.5 text-[13px] disabled:opacity-50";
 

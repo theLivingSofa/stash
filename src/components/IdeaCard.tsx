@@ -4,7 +4,7 @@ import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 
 import type { Card, IdeaBack } from "@/lib/types";
 import { topicLabel } from "@/lib/topics";
 import { CardActions } from "./CardActions";
-import { IconBack, IconDetails, IconExternal } from "./Icons";
+import { IconBack, IconExternal, IconTurn } from "./Icons";
 
 const FLIP_MS = 350;
 const FADE_MS = 170;
@@ -19,6 +19,8 @@ export interface CardHandlers {
 
 interface Props extends CardHandlers {
   card: Card;
+  /** Seen in this session (on screen 1.5s): shows the grease-pencil tick. */
+  seen?: boolean;
   /** Parent can force the card back to its front (e.g. when it leaves the screen). */
   forceFront?: boolean;
 }
@@ -44,7 +46,7 @@ function lengthBucket(text: string): "short" | "normal" | "long" {
   return n < 38 ? "short" : n > 78 ? "long" : "normal";
 }
 
-export const IdeaCard = memo(function IdeaCard({ card, forceFront, onUpdate, onRelated, onFlipChange }: Props) {
+export const IdeaCard = memo(function IdeaCard({ card, seen = false, forceFront, onUpdate, onRelated, onFlipChange }: Props) {
   const [side, setSide] = useState<Side>("front");
   const [rest, setRest] = useState<Side | null>("front");
   const [instant, setInstant] = useState(false);
@@ -52,7 +54,7 @@ export const IdeaCard = memo(function IdeaCard({ card, forceFront, onUpdate, onR
   const detailsRef = useRef<HTMLButtonElement>(null);
   const backHeaderRef = useRef<HTMLButtonElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const spine = `var(--t-${card.topics[0] ?? "philosophy"}, var(--accent))`;
+  const light = `var(--t-${card.topics[0] ?? "philosophy"}, var(--accent))`;
 
   useEffect(() => () => {
     if (timer.current) clearTimeout(timer.current);
@@ -117,24 +119,25 @@ export const IdeaCard = memo(function IdeaCard({ card, forceFront, onUpdate, onR
         style={instant ? { transition: "none" } : undefined}
       >
         <article
-          className="face face-front"
-          style={{ ["--spine" as string]: spine }}
+          className="face face-front glass"
+          style={{ ["--light" as string]: light }}
           aria-hidden={side === "back"}
           inert={side === "back"}
           aria-label={card.title ?? "Idea"}
         >
-          <Spine topic={card.topics[0]} />
-          <Front card={card} detailsRef={detailsRef} onOpen={open} onUpdate={onUpdate} flipped={side === "back"} />
+          <span className="tape" data-on={card.saved ? "true" : "false"} aria-hidden />
+          <Band card={card} />
+          <Front card={card} seen={seen} detailsRef={detailsRef} onOpen={open} onUpdate={onUpdate} flipped={side === "back"} />
         </article>
 
         <article
-          className="face face-back"
-          style={{ ["--spine" as string]: spine }}
+          className="face face-back glass"
+          style={{ ["--light" as string]: light }}
           aria-hidden={side === "front"}
           inert={side === "front"}
           aria-label={`Details: ${card.title ?? "idea"}`}
         >
-          <Spine topic={card.topics[0]} />
+          <Band card={card} back />
           {backMounted ? (
             <Back card={card} headerRef={backHeaderRef} onClose={close} onUpdate={onUpdate} onRelated={onRelated} />
           ) : null}
@@ -144,22 +147,36 @@ export const IdeaCard = memo(function IdeaCard({ card, forceFront, onUpdate, onR
   );
 });
 
-function Spine({ topic }: { topic?: string }) {
+/** Four-digit slide number derived from the idea id: a literal label, like a mount stamp. */
+export function slideNumber(id: string): string {
+  const n = parseInt(id.replace(/-/g, "").slice(0, 6), 16);
+  return String(Number.isFinite(n) ? n % 10000 : 0).padStart(4, "0");
+}
+
+/** The mount's printed band: topic, slide number, source. */
+function Band({ card, back = false }: { card: Card; back?: boolean }) {
   return (
-    <div className="spine" aria-hidden>
-      <span className="spine-label">{topicLabel(topic ?? "ideas")}</span>
+    <div className="band" aria-hidden>
+      <span className="chip-film" />
+      <span>{topicLabel(card.topics[0] ?? "ideas")}</span>
+      <span className="tabular opacity-70">No. {slideNumber(card.id)}</span>
+      <span className="ml-auto min-w-0 truncate opacity-80" style={{ textTransform: "none", letterSpacing: "0.01em" }}>
+        {back ? "Notes" : card.source.domain || "source"}
+      </span>
     </div>
   );
 }
 
 function Front({
   card,
+  seen,
   detailsRef,
   onOpen,
   onUpdate,
   flipped,
 }: {
   card: Card;
+  seen: boolean;
   detailsRef: React.RefObject<HTMLButtonElement | null>;
   onOpen: () => void;
   onUpdate: CardHandlers["onUpdate"];
@@ -168,7 +185,7 @@ function Front({
   const bodyRef = useRef<HTMLDivElement>(null);
   const [shrink, setShrink] = useState(1);
 
-  // Keep the whole idea on one screen: step the type down if it would overflow.
+  // Keep the whole idea in the window: step the type down if it would overflow.
   useLayoutEffect(() => {
     const body = bodyRef.current;
     if (!body) return;
@@ -189,45 +206,46 @@ function Front({
   }, [card.text, card.title, card.why]);
 
   return (
-    <div className="flex h-full flex-col pl-[30px]">
-      <div ref={bodyRef} className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden px-5 pt-5 pb-2" style={{ ["--fit" as string]: shrink }}>
-        {card.beyond ? (
-          <p className="mb-4 text-[13px] leading-snug text-accent">
-            You&apos;ve seen everything new on &ldquo;{card.beyond}&rdquo;. Here&apos;s more from across your feed.
-          </p>
-        ) : null}
-        {card.title ? <h2 className="mb-3 text-[13.5px] font-medium leading-snug text-muted">{card.title}</h2> : null}
-        <p
-          className="idea-text"
-          data-len={lengthBucket(card.text)}
+    <>
+      <div className="window">
+        <svg className="tick absolute top-4 right-4 h-[16px] w-[21px]" viewBox="0 0 28 22" data-on={seen ? "true" : "false"} aria-hidden>
+          <path d="M3 12.5 L10.5 19 L25 3.5" fill="none" stroke="var(--grease)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <div
+          ref={bodyRef}
+          className="flex h-full flex-col justify-center overflow-hidden px-6 py-8"
+          style={{ ["--fit" as string]: shrink }}
         >
-          {card.text}
-        </p>
-        {card.why ? (
-          <p className="mt-4 leading-relaxed text-muted" style={{ fontSize: `calc(14px * max(var(--fit, 1), 0.85))` }}>
-            {card.why}
+          {card.beyond ? (
+            <p className="label mb-4 text-[13.5px] leading-snug text-accent">
+              That&apos;s everything new on &ldquo;{card.beyond}&rdquo;. More from across your feed.
+            </p>
+          ) : null}
+          {card.title ? <h2 className="idea-title mb-3">{card.title}</h2> : null}
+          <p className="idea-text" data-len={lengthBucket(card.text)}>
+            {card.text}
           </p>
-        ) : null}
-      </div>
-      <footer className="px-5 pb-3">
-        <div className="flex items-center justify-between gap-3 py-2 text-[13px]">
-          <span className="min-w-0 truncate text-faint" title={card.source.title}>
-            {card.source.domain || "source"}
-          </span>
-          <button
-            ref={detailsRef}
-            type="button"
-            onClick={onOpen}
-            aria-expanded={flipped}
-            className="-mr-2 inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-1.5 text-[13.5px] text-accent underline-offset-4 hover:underline"
-          >
-            <IconDetails />
-            Details
-          </button>
+          {card.why ? (
+            <p className="mt-5 leading-relaxed text-muted" style={{ fontSize: `calc(14.5px * max(var(--fit, 1), 0.86))` }}>
+              {card.why}
+            </p>
+          ) : null}
         </div>
+      </div>
+      <footer className="flex items-center justify-between gap-2 pt-2 pl-0.5">
         <CardActions card={card} onUpdate={onUpdate} includeBack={false} />
+        <button
+          ref={detailsRef}
+          type="button"
+          onClick={onOpen}
+          aria-expanded={flipped}
+          className="pill turn shrink-0"
+        >
+          <IconTurn />
+          Turn over
+        </button>
       </footer>
-    </div>
+    </>
   );
 }
 
@@ -278,92 +296,96 @@ function Back({
 
   const back = card.back;
   return (
-    <div className="flex h-full flex-col pl-[30px]">
-      <button
-        ref={headerRef}
-        type="button"
-        onClick={onClose}
-        aria-expanded
-        aria-label={`Back to idea${card.title ? `: ${card.title}` : ""}`}
-        className="flex w-full items-start gap-2 border-b border-line px-5 pt-4 pb-3 text-left"
-      >
-        <IconBack className="mt-0.5 shrink-0 text-accent" />
-        <span className="min-w-0">
-          <span className="block text-[13px] text-accent">Back to idea</span>
-          <span className="mt-0.5 block font-serif text-[17px] leading-snug">{card.title ?? card.concept ?? "Details"}</span>
-        </span>
-      </button>
+    <>
+      <div className="window flex flex-col">
+        <button
+          ref={headerRef}
+          type="button"
+          onClick={onClose}
+          aria-expanded
+          aria-label={`Back to idea${card.title ? `: ${card.title}` : ""}`}
+          className="flex w-full items-start gap-3 border-b border-line px-5 pt-4 pb-3.5 text-left"
+        >
+          <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-2 text-accent">
+            <IconBack />
+          </span>
+          <span className="min-w-0">
+            <span className="label block text-[13px] text-accent">Back to idea</span>
+            <span className="mt-0.5 block font-serif text-[18px] leading-snug">{card.title ?? card.concept ?? "Details"}</span>
+          </span>
+        </button>
 
-      <div className="back-scroll min-h-0 flex-1 px-5 py-4" data-testid="back-scroll">
-        {state === "loading" && !back ? <BackSkeleton /> : null}
-        {state === "error" && !back ? (
-          <div className="py-6 text-[15px]">
-            <p className="text-muted">{error}</p>
-            <button type="button" onClick={load} className="mt-3 rounded-full border border-line px-4 py-2 text-[14px]">
-              Try again
-            </button>
-          </div>
-        ) : null}
-        {back ? (
-          <div className="prose-back space-y-5">
-            <Section title="Concept" body={back.concept} />
-            <Section title="Where it comes from" body={back.origin} />
-            <Section title="The thinking behind it" body={back.reasoning} />
-            <Section title="Example" body={back.example} />
-            {back.related.length ? (
-              <section>
-                <h3 className="mb-2 font-sans text-[13px] font-medium text-muted">Related</h3>
-                <div className="flex flex-wrap gap-2">
-                  {back.related.map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => onRelated(r)}
-                      className="rounded-full border border-line bg-surface-2 px-3 py-1.5 font-sans text-[13.5px] hover:border-accent"
-                    >
-                      {r}
-                    </button>
-                  ))}
-                </div>
-              </section>
-            ) : null}
-            {back.confidence === "low" ? (
-              <p className="rounded-xl border border-line bg-surface-2 px-3 py-2.5 font-sans text-[13.5px] leading-relaxed text-muted">
-                Some details here are contested or uncertain. Treat this as a starting point, and check the original or
-                the Wikipedia link before relying on it.
-              </p>
-            ) : null}
-            <div className="flex flex-wrap gap-x-5 gap-y-2 pt-1 pb-2 font-sans text-[14px]">
-              {card.source.url ? (
-                <a href={card.source.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-accent underline-offset-4 hover:underline">
-                  Read original <IconExternal />
-                </a>
-              ) : null}
-              {card.learnMoreUrl ? (
-                <a href={card.learnMoreUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-accent underline-offset-4 hover:underline">
-                  Learn more on Wikipedia <IconExternal />
-                </a>
-              ) : null}
+        <div className="back-scroll min-h-0 flex-1 px-5 py-5" data-testid="back-scroll">
+          {state === "loading" && !back ? <BackSkeleton /> : null}
+          {state === "error" && !back ? (
+            <div className="py-6 text-[15px]">
+              <p className="text-muted">{error}</p>
+              <button type="button" onClick={load} className="pill mt-3 border border-line">
+                Try again
+              </button>
             </div>
-            <p className="pb-1 font-sans text-[12.5px] leading-relaxed text-faint">
-              From {card.source.title}
-              {card.source.author ? `, by ${card.source.author}` : ""} ({card.source.domain}). Summarised in Stash&apos;s own words.
-            </p>
-          </div>
-        ) : null}
+          ) : null}
+          {back ? (
+            <div className="prose-back space-y-6">
+              <Section title="Concept" body={back.concept} />
+              <Section title="Where it comes from" body={back.origin} />
+              <Section title="The thinking behind it" body={back.reasoning} />
+              <Section title="Example" body={back.example} />
+              {back.related.length ? (
+                <section>
+                  <h3 className="back-h">Related</h3>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {back.related.map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => onRelated(r)}
+                        className="pill border border-line bg-surface-2 font-sans text-text hover:border-accent"
+                      >
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+              {back.confidence === "low" ? (
+                <p className="rounded-2xl bg-surface-2 px-4 py-3 font-sans text-[13.5px] leading-relaxed text-muted">
+                  Some details here are contested or uncertain. Treat this as a starting point, and check the original or
+                  the Wikipedia link before relying on it.
+                </p>
+              ) : null}
+              <div className="flex flex-wrap gap-x-5 gap-y-2 pt-1 font-sans text-[14.5px] font-semibold">
+                {card.source.url ? (
+                  <a href={card.source.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-accent underline-offset-4 hover:underline">
+                    Read original <IconExternal />
+                  </a>
+                ) : null}
+                {card.learnMoreUrl ? (
+                  <a href={card.learnMoreUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-accent underline-offset-4 hover:underline">
+                    Learn more on Wikipedia <IconExternal />
+                  </a>
+                ) : null}
+              </div>
+              <p className="pb-1 font-sans text-[12.5px] leading-relaxed text-faint">
+                From {card.source.title}
+                {card.source.author ? `, by ${card.source.author}` : ""} ({card.source.domain}). Summarised in Stash&apos;s own words.
+              </p>
+            </div>
+          ) : null}
+        </div>
       </div>
 
-      <div className="border-t border-line px-5 pb-3">
+      <footer className="pt-2 pl-0.5">
         <CardActions card={card} onUpdate={onUpdate} includeBack />
-      </div>
-    </div>
+      </footer>
+    </>
   );
 }
 
 function Section({ title, body }: { title: string; body: string }) {
   return (
     <section>
-      <h3 className="mb-1.5 font-sans text-[13px] font-medium text-muted">{title}</h3>
+      <h3 className="back-h">{title}</h3>
       <p>{body}</p>
     </section>
   );

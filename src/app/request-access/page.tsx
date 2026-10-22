@@ -3,15 +3,15 @@ import { cookies } from "next/headers";
 import type { GoogleIdentity } from "@/lib/auth/google";
 import { PENDING_COOKIE, readTemp } from "@/lib/auth/session";
 import { RequestForm } from "./RequestForm";
+import { MountFrame } from "@/components/MountFrame";
 
 export const metadata = { title: "Request access · Stash" };
 
 export default async function RequestAccessPage() {
   const who = await readTemp<GoogleIdentity>((await cookies()).get(PENDING_COOKIE)?.value);
   return (
-    <main className="flex flex-col justify-center px-7 py-16" style={{ minHeight: "100dvh" }}>
-      <div className="mx-auto w-full max-w-sm">
-        <h1 className="font-serif text-[34px] leading-tight font-semibold tracking-tight">Stash is invite-only</h1>
+    <MountFrame label="Stash" aside="Invite only">
+        <h1 className="display text-[34px] leading-[1.02]" style={{ fontStretch: "72%" }}>Stash is invite-only</h1>
         {who ? (
           <>
             <p className="mt-3 font-serif text-[17px] leading-relaxed text-muted">
@@ -25,12 +25,11 @@ export default async function RequestAccessPage() {
             <p className="mt-3 font-serif text-[17px] leading-relaxed text-muted">
               Sign in with Google first, then you can ask for access.
             </p>
-            <Link href="/login" className="mt-8 block rounded-2xl bg-accent px-4 py-3.5 text-center text-[16px] font-medium text-accent-ink">
+            <Link href="/login" className="label mt-8 block rounded-full bg-accent px-4 py-3.5 text-center text-[16px] text-accent-ink">
               Go to sign in
             </Link>
           </>
         )}
-      </div>
-    </main>
+    </MountFrame>
   );
 }

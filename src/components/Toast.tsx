@@ -29,10 +29,10 @@ export function Toaster() {
       role="status"
       aria-live="polite"
       className="pointer-events-none fixed inset-x-0 z-50 flex justify-center px-4"
-      style={{ bottom: "calc(var(--nav-h) + var(--safe-bottom, env(safe-area-inset-bottom)) + 14px)" }}
+      style={{ bottom: "calc(var(--dock-space) + 6px)" }}
     >
       {msg ? (
-        <div className="rounded-full border border-line bg-surface-2 px-4 py-2 text-[14px] text-text">{msg}</div>
+        <div className="chrome label rounded-full px-4 py-2.5 text-[14px] text-text">{msg}</div>
       ) : null}
     </div>
   );
