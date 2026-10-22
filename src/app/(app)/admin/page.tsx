@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { People } from "./People";
+import { PeopleSummary } from "./People";
 
 interface AdminData {
   bufferTarget: number;
@@ -114,7 +114,7 @@ export default function AdminPage() {
     <div className="page-scroll px-4 pt-1 text-[14px]">
       <h1 className="mb-4 px-1 font-serif text-[22px]">Behind the scenes</h1>
 
-      <People />
+      <PeopleSummary />
       <DeviceInfo />
 
       <AudioPanel />

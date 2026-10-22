@@ -99,7 +99,7 @@ describe("access requests", () => {
   it("builds a clear email with the review link and escapes the note", () => {
     const m = accessRequestEmail({ name: "A Friend", email: "f@x.com", note: "<b>hi</b>" }, "https://stash.test/");
     expect(m.subject).toBe("A Friend is asking to join Stash");
-    expect(m.text).toContain("https://stash.test/admin#people");
+    expect(m.text).toContain("https://stash.test/admin/people?tab=requests");
     expect(m.html).toContain("&lt;b&gt;hi&lt;/b&gt;");
     expect(m.html).not.toContain("<b>hi</b>");
   });

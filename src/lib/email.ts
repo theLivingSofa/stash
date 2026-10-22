@@ -26,7 +26,7 @@ const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&
 
 export function accessRequestEmail(req: { name: string | null; email: string; note: string | null }, siteUrl: string) {
   const who = req.name ? `${req.name} (${req.email})` : req.email;
-  const link = `${siteUrl.replace(/\/$/, "")}/admin#people`;
+  const link = `${siteUrl.replace(/\/$/, "")}/admin/people?tab=requests`;
   const subject = `${req.name ?? req.email} is asking to join Stash`;
   const text = [
     `${who} signed in with Google and is asking for access to Stash.`,
