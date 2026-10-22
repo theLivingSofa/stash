@@ -120,6 +120,10 @@ export default function SettingsPage() {
               Test
             </button>
           </div>
+          <p className="mt-2 text-[13px] leading-relaxed text-muted">
+            Hearing nothing on iPhone? Silent mode can mute read-aloud. Turn it off (Control Center or the side switch /
+            Action button) and check the volume.
+          </p>
           {voices.length > 0 && voiceScore(voices[0]) < 4 ? (
             <p className="mt-2 text-[13px] leading-relaxed text-muted">
               For a far more natural voice on iPhone, download a free Premium voice: Settings → Accessibility → Spoken

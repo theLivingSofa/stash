@@ -123,3 +123,36 @@ describe("voice ranking", () => {
     expect(voiceScore({ name: "Thomas", lang: "fr-FR" })).toBeLessThan(-50);
   });
 });
+
+describe("iOS media routing", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.resetModules();
+  });
+  it("switches the audio session to playback and plays a silent clip inside the tap", async () => {
+    const played: string[] = [];
+    const session = { type: "auto" };
+    vi.stubGlobal("navigator", { audioSession: session });
+    vi.stubGlobal(
+      "Audio",
+      class {
+        volume = 1;
+        constructor(public src: string) {}
+        setAttribute() {}
+        play() {
+          played.push(this.src.slice(0, 22));
+          return Promise.resolve();
+        }
+      },
+    );
+    const { preferMediaAudio } = await import("@/lib/client/speak");
+    preferMediaAudio();
+    expect(session.type).toBe("playback");
+    expect(played).toEqual(["data:audio/wav;base64,"]);
+  });
+  it("is a harmless no-op where unsupported", async () => {
+    vi.stubGlobal("navigator", {});
+    const { preferMediaAudio } = await import("@/lib/client/speak");
+    expect(() => preferMediaAudio()).not.toThrow();
+  });
+});

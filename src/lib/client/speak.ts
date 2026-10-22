@@ -104,6 +104,33 @@ if (canSpeak()) {
   }
 }
 
+// 50ms of silence (8 kHz, 8-bit WAV). Playing it inside the tap makes Safari
+// treat the page's audio as media playback, which iOS doesn't mute in Silent mode.
+const SILENT_WAV = "data:audio/wav;base64,UklGRrQBAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YZABAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA";
+let silentAudio: HTMLAudioElement | null = null;
+
+/**
+ * Ask iOS to route speech like music/video rather than like a ringtone, so the
+ * Silent switch doesn't mute it. Must run inside the tap handler. Both steps are
+ * best-effort no-ops on browsers that don't need or support them.
+ */
+export function preferMediaAudio() {
+  try {
+    const session = (navigator as Navigator & { audioSession?: { type: string } }).audioSession;
+    if (session && session.type !== "playback") session.type = "playback";
+  } catch {
+    /* unsupported */
+  }
+  try {
+    silentAudio ??= new Audio(SILENT_WAV);
+    silentAudio.setAttribute("playsinline", "");
+    silentAudio.volume = 0.01;
+    void silentAudio.play().catch(() => {});
+  } catch {
+    /* no audio element support */
+  }
+}
+
 export interface SpeakOptions {
   voice?: string | null;
   rate?: number;
@@ -124,6 +151,7 @@ export function speak(text: string, opts: SpeakOptions) {
   }
   const synth = window.speechSynthesis;
   const id = ++session;
+  preferMediaAudio();
   // Only cancel when something is actually queued: on iOS Safari, cancel()
   // immediately followed by speak() can silently drop the new utterance.
   if (synth.speaking || synth.pending) synth.cancel();
