@@ -217,6 +217,20 @@ a {
   position: relative;
   z-index: 1;
 }
+/* The floor under the dock fades to the ground colour, which is also what iOS
+   paints in the strip it keeps below installed apps. Content scrolling down
+   dissolves into it instead of stopping at a hard edge. */
+.app-frame::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  height: var(--dock-space);
+  background: linear-gradient(to bottom, transparent, color-mix(in oklab, var(--ground) 82%, transparent) 55%, var(--ground));
+  pointer-events: none;
+}
 
 .app-main {
   position: relative;
@@ -490,6 +504,12 @@ a {
     inset 0 1px 0 var(--frame-hi),
     inset 0 -1px 0 rgba(0, 0, 0, 0.22),
     var(--frame-shadow);
+}
+
+/* .glass sets position: relative; a card face must stay pinned to its slot,
+   or long ideas stretch it past the dock instead of fitting the window. */
+.face.glass {
+  position: absolute;
 }
 
 /* Rim refraction: a brighter edge on the light-facing corners. */
