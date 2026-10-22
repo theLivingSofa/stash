@@ -45,7 +45,7 @@ export const viewport: Viewport = {
 // installed, full-width iPhone apps; Android and iPad split view are untouched.
 const fitScript = `(function(){function fit(){try{var d=document.documentElement;if(navigator.standalone!==true){d.style.removeProperty("--safe-bottom");return;}var w=innerWidth,h=innerHeight,sw=screen.width,sh=screen.height,portrait=h>=w,full=portrait?Math.max(sw,sh):Math.min(sw,sh),fullW=portrait?Math.min(sw,sh):Math.max(sw,sh);if(Math.abs(w-fullW)<2&&full>h+20){d.style.setProperty("--safe-bottom","0px");}else{d.style.removeProperty("--safe-bottom");}}catch(e){}}fit();addEventListener("resize",fit);addEventListener("orientationchange",function(){setTimeout(fit,300);});})();`;
 
-const settingsScript = `(function(){try{var s=JSON.parse(localStorage.getItem("stash-settings")||"{}");var d=document.documentElement;d.dataset.theme=s.theme==="light"?"light":"dark";if(s.fontScale)d.style.setProperty("--font-scale",String(s.fontScale));}catch(e){document.documentElement.dataset.theme="dark";}})();`;
+const settingsScript = `(function(){var d=document.documentElement;try{var s=JSON.parse(localStorage.getItem("stash-settings")||"{}");var t=s.v===2?s.theme:"auto";if(t!=="dark"&&t!=="light")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";d.dataset.theme=t;if(s.fontScale)d.style.setProperty("--font-scale",String(s.fontScale));}catch(e){d.dataset.theme="dark";}})();`;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

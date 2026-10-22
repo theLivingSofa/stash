@@ -42,7 +42,7 @@ export default function SettingsPage() {
   }
 
   const row = "flex items-center justify-between gap-4 border-b border-line px-1 py-4";
-  const seg = (on: boolean) => `label rounded-full px-3.5 py-1.5 text-[14px] ${on ? "bg-accent text-accent-ink" : "text-muted"}`;
+  const seg = (on: boolean) => `label rounded-full px-3 py-1.5 text-[14px] ${on ? "bg-accent text-accent-ink" : "text-muted"}`;
 
   return (
     <div className="page-scroll px-4 pt-1">
@@ -51,14 +51,16 @@ export default function SettingsPage() {
       <Account me={me} />
 
       <div className={row}>
-        <span className="text-[15px]">Theme</span>
+        <span>
+          <span className="block text-[15px]">Theme</span>
+          {s.theme === "auto" ? <span className="block whitespace-nowrap text-[13px] text-muted">Follows your device</span> : null}
+        </span>
         <div className="flex rounded-full bg-surface-2 p-1" role="group" aria-label="Theme">
-          <button type="button" className={seg(s.theme === "dark")} aria-pressed={s.theme === "dark"} onClick={() => update({ theme: "dark" })}>
-            Dark
-          </button>
-          <button type="button" className={seg(s.theme === "light")} aria-pressed={s.theme === "light"} onClick={() => update({ theme: "light" })}>
-            Light
-          </button>
+          {(["auto", "dark", "light"] as const).map((t) => (
+            <button key={t} type="button" className={seg(s.theme === t)} aria-pressed={s.theme === t} onClick={() => update({ theme: t })}>
+              {t === "auto" ? "Auto" : t === "dark" ? "Dark" : "Light"}
+            </button>
+          ))}
         </div>
       </div>
 
