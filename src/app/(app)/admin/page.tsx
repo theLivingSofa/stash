@@ -337,7 +337,7 @@ function AudioPanel() {
       const r = await fetch("/api/admin/audio", { method: "POST" });
       if (!r.ok) throw new Error();
       setA(await r.json());
-      setNote("Started. It runs on the server, so you can close the app; the schedule also continues every 30 minutes.");
+      setNote("Started. It runs on the server, so you can close the app. A background job also checks every 10 minutes and finishes whatever is left.");
       setTimeout(load, 8_000);
     } catch {
       setNote("Couldn't start it. Try again in a minute.");

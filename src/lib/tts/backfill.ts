@@ -137,9 +137,17 @@ export async function audioReady(ids: string[]): Promise<Set<string>> {
  * each round starts the next while cards remain (see that route).
  */
 export async function startAudioRound(origin: string, secret: string, hop: number) {
+  // Best effort: the "Read-aloud audio" GitHub workflow (every 10 minutes)
+  // guarantees the rest gets made if a hand-off here doesn't go through.
   await fetch(`${origin}/api/tts/backfill?chain=${hop}`, {
     method: "POST",
     headers: { Authorization: `Bearer ${secret}` },
     signal: AbortSignal.timeout(5_000),
-  }).catch(() => {});
+  })
+    .then((r) => {
+      if (!r.ok) console.warn(`[audio] round ${hop} not started: HTTP ${r.status}`);
+    })
+    .catch((e: Error) => {
+      if (e.name !== "TimeoutError") console.warn(`[audio] round ${hop} not started: ${e.message}`);
+    });
 }
