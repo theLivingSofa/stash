@@ -134,9 +134,8 @@ export default function SettingsPage() {
           </p>
           {voices.length > 0 && !voiceQuality(voices[0]) ? (
             <p className="mt-2 text-[13px] leading-relaxed text-muted">
-              For a far more natural voice on iPhone, download a free Premium voice: Settings → Accessibility → Spoken
-              Content (or Read &amp; Speak) → Voices → English, then pick one marked Premium, like Ava or Zoe. Reopen Stash and
-              it&apos;s used automatically. No data or tokens needed.
+              On iPhone, web apps can only use the voices that come with the phone. Voices you download in Settings
+              (Premium or Enhanced) don&apos;t show up here, so pick the one you like best from the list above.
             </p>
           ) : null}
           <label htmlFor="rate" className="mt-3 flex items-center justify-between text-[13px] text-muted">
